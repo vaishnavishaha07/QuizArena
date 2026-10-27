@@ -1,0 +1,2573 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>QuizArena- Multiplayer Quiz Battles</title>
+  <script src="https://cdn.tailwindcss.com"></script>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600;700;800&display=swap" rel="stylesheet">
+  <style>
+    * { box-sizing: border-box; }
+
+    body {
+      font-family: 'Inter', sans-serif;
+      color: white;
+      margin: 0;
+      overflow: hidden;
+      height: 100vh;
+      background: linear-gradient(-45deg, #06b6d4, #8b5cf6, #3b82f6, #9333ea);
+      background-size: 300% 300%;
+      animation: bgShift 10s ease infinite;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+    }
+
+    @keyframes bgShift {
+      0% { background-position: 0% 50%; }
+      50% { background-position: 100% 50%; }
+      100% { background-position: 0% 50%; }
+    }
+
+/* THEME STYLES */
+body.dark-theme {
+  background: linear-gradient(-45deg, #06b6d4, #8b5cf6, #3b82f6, #9333ea);
+  background-size: 300% 300%;
+  animation: bgShift 10s ease infinite;
+}
+
+body.light-theme {
+  background: linear-gradient(-45deg, #facc15, #ef4444, #f97316, #facc15);
+  background-size: 300% 300%;
+  animation: bgShift 10s ease infinite;
+}
+
+body.midnight-theme {
+  background: linear-gradient(-45deg, #0f172a, #1e3a8a, #312e81, #1e3a8a);
+  background-size: 300% 300%;
+  animation: bgShift 10s ease infinite;
+}
+
+
+    .page { display: none; width: 100%; height: 100%; align-items: center; justify-content: center; }
+    .page.active { display: flex; }
+
+    .card-bg {
+      background-color: rgba(17, 24, 39, 0.95);
+      box-shadow: 0 10px 40px rgba(0, 0, 0, 0.5);
+      border: 1px solid rgba(255, 255, 255, 0.06);
+      padding: 2rem;
+      border-radius: 1.25rem;
+      text-align: center;
+      z-index: 2;
+      position: relative;
+    }
+
+    .menu-btn {
+      display: block;
+      width: 100%;
+      margin: 0.5rem 0;
+      padding: 0.9rem;
+      border-radius: 0.75rem;
+      font-weight: 700;
+      font-size: 1rem;
+      transition: all 0.3s ease;
+      color: white;
+      box-shadow: 0 4px 12px rgba(0,0,0,0.3);
+    }
+
+    .blue { background: linear-gradient(90deg, #2563eb, #3b82f6); }
+    .pale-blue { background: linear-gradient(90deg, #93c5fd, #bfdbfe);}
+    .indigo { background: linear-gradient(90deg, #4f46e5, #6366f1); }
+    .cyan { background: linear-gradient(90deg, #06b6d4, #22d3ee); }
+    .amber { background: linear-gradient(90deg, #f59e0b, #fbbf24); }
+    .pink { background: linear-gradient(90deg, #ec4899, #f472b6); }
+    .orange { background: linear-gradient(90deg, #f97316, #fb923c); }
+    .red { background: linear-gradient(90deg, #dc2626, #ef4444); }
+    .green { background: linear-gradient(90deg, #16a34a, #22c55e);}
+
+    .menu-btn:hover { transform: translateY(-3px) scale(1.02); filter: brightness(1.15); }
+
+    /* Floating emojis */
+    .emoji-bg {
+      position: fixed;
+      bottom: 0;
+      left: 0;
+      width: 100%;
+      height: 100%;
+      overflow: hidden;
+      z-index: 1;
+      pointer-events: none;
+    }
+    .emoji-bg span {
+      position: absolute;
+      font-size: 2rem;
+      opacity: 0.75;
+      animation: floatUp 15s linear infinite;
+      bottom: -10%;
+    }
+    @keyframes floatUp {
+      0% { transform: translateY(0) rotate(0deg); opacity: 0; }
+      10% { opacity: 0.9; }
+      100% { transform: translateY(-120vh) rotate(360deg); opacity: 0; }
+    }
+
+    /* Category decorative effects */
+    .category-card {
+      position: relative;
+      overflow: hidden;
+      z-index: 1;
+      padding: 1rem;
+      border-radius: 0.75rem;
+      min-height: 84px;
+      display:flex;
+      flex-direction:column;
+      justify-content:center;
+    }
+    .category-card h3 { margin:0; font-weight:800; font-size:1.05rem; }
+    .category-card p { margin:0; color: #cbd5e1; opacity:0.8; font-size:0.9rem; }
+
+    .energy-pulse {
+      position: absolute;
+      inset: 0;
+      border-radius: 0.75rem;
+      opacity: 0.6;
+      filter: blur(18px);
+      animation: energyPulse 4s ease-in-out infinite;
+      z-index: 0;
+    }
+    @keyframes energyPulse {
+      0%, 100% { opacity: 0.18; transform: scale(1); }
+      50% { opacity: 0.8; transform: scale(1.08); }
+    }
+    .qp-movies .energy-pulse { background: radial-gradient(circle at center, rgba(255,75,75,0.55), rgba(255,0,0,0.08)); }
+    .qp-science .energy-pulse { background: radial-gradient(circle at center, rgba(0,120,255,0.55), rgba(0,80,255,0.06)); }
+    .qp-history .energy-pulse { background: radial-gradient(circle at center, rgba(255,215,100,0.55), rgba(240,200,80,0.06)); }
+    .qp-sports .energy-pulse { background: radial-gradient(circle at center, rgba(120,255,150,0.55), rgba(50,150,100,0.06)); }
+
+
+/* Quiz UI */
+    .quiz-container {
+      width: 700px;
+      max-width: 40%;
+      position: relative;
+      text-align: left;
+    }
+
+/* Make sure it centers properly on screen */
+#quizContainerWrapper {
+  display: flex;
+  justify-content: center;
+  align-items: flex-start;
+  width: 100%;
+}
+
+
+    .top-stats {
+      position: absolute;
+      right: 14px;
+      top: 12px;
+      text-align: right;
+      z-index: 3;
+      font-weight: 700;
+      color: #e6eef8;
+      font-size: 0.95rem;
+    }
+    .top-stats .stat {
+      background: rgba(255,255,255,0.04);
+      padding: 6px 10px;
+      border-radius: 10px;
+      margin-bottom: 6px;
+      display: inline-block;
+      min-width: 72px;
+    }
+
+    .question-box {
+      background: rgba(6,8,26,0.8);
+      padding: 1.2rem 2rem;
+      border-radius: 0.75rem;
+      border: 1px solid rgba(255,255,255,0.06);
+      min-height: 120px;
+      position: relative;
+      overflow: hidden;
+    }
+    .options { margin-top: 1rem; display: grid; gap: 0.6rem; }
+    .option-label {
+      display: flex;
+      align-items: center;
+      gap: 0.8rem;
+      padding: 0.7rem;
+      border-radius: 0.6rem;
+      cursor: pointer;
+      font-weight: 600;
+      transition: background 0.18s ease, transform 0.12s ease;
+      background: rgba(255,255,255,0.03);
+      transition: background-color 0.3s ease;
+
+    }
+    .option-label:hover { transform: translateX(4px); background: rgba(255,255,255,0.05); }
+
+    .progress-bar {
+      height: 8px;
+      background: rgba(255,255,255,0.06);
+      border-radius: 999px;
+      overflow: hidden;
+      margin-top: 1rem;
+    }
+    .progress-inner {
+      height: 100%;
+      width: 0%;
+      background: linear-gradient(90deg,#34d399,#06b6d4);
+      transition: width 0.4s ease;
+    }
+
+    .q-enter { transform: translateX(20px); opacity: 0; }
+    .q-enter-active { transform: translateX(0); opacity: 1; transition: all 300ms ease; }
+    .q-exit-active { transform: translateX(-20px); opacity: 0; transition: all 300ms ease; }
+
+    .center-controls { display:flex; gap:0.6rem; align-items:center; justify-content:flex-end; margin-top:1rem; }
+    .small-btn { padding:0.6rem 0.9rem; border-radius:0.5rem; font-weight:700; cursor:pointer; }
+    .summary-box {
+      width: 520px;
+      max-width: 92%;
+      background: rgba(7,10,30,0.85);
+      padding: 1.4rem;
+      border-radius: 0.8rem;
+      text-align: center;
+    }
+
+    /* Quick Play DISCOVER-like card */
+    .qp-discover-overlay {
+      position: fixed;
+      inset: 0;
+      display: none;
+      align-items: center;
+      justify-content: center;
+      z-index: 5;
+      pointer-events: none;
+    }
+    .qp-discover-overlay.active {
+      display: flex;
+      pointer-events: auto;
+    }
+    .qp-discover-card {
+      width: 640px;
+      max-width: 92%;
+      padding: 2rem;
+      border-radius: 1rem;
+      position: relative;
+      z-index: 6;
+      background: rgba(8,12,30,0.95);
+      border: 1px solid rgba(255,255,255,0.04);
+    }
+    .qp-grid {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 14px;
+      margin-top: 18px;
+    }
+    .qp-title {
+      font-size: 1.9rem;
+      font-weight: 800;
+      margin-bottom: 6px;
+    }
+    .qp-sub { color: #9aa8c9; opacity: 0.9; margin-bottom: 12px; }
+
+    /* Countdown overlay (center large numbers) */
+    .countdown-overlay {
+      position: fixed;
+      inset: 0;
+      display: none;
+      align-items: center;
+      justify-content: center;
+      z-index: 40;
+      pointer-events: none;
+    }
+    .countdown-overlay.active { display:flex; pointer-events: none; }
+    .countdown-number {
+      font-size: 140px;
+      font-weight: 900;
+      color: #fff;
+      text-shadow: 0 6px 40px rgba(255,255,255,0.25), 0 2px 20px rgba(0,0,0,0.6);
+      opacity: 0;
+      transform: scale(0.6);
+      transition: all 300ms ease;
+    }
+    .countdown-number.show {
+      opacity: 1;
+      transform: scale(1);
+    }
+
+    @media (max-width: 720px) {
+      .qp-discover-card { width: 92%; padding: 1rem; }
+      .countdown-number { font-size: 96px; }
+      .top-stats { right: 8px; top: 8px; font-size: 0.85rem; }
+    }
+
+<div class="bg-gray-800 p-4 rounded-lg hover:bg-gray-700 transition">
+  <h3 class="font-semibold text-lg mb-1">🎬 Movies & Cinema</h3>
+  <p class="text-gray-400 text-sm">From classic films to modern blockbusters.</p>
+</div>
+
+
+.join-room-card {
+  animation: fadeIn 0.4s ease;
+}
+
+@keyframes fadeIn {
+  from { opacity: 0; transform: scale(0.95); }
+  to { opacity: 1; transform: scale(1); }
+}
+
+
+.animate-fadeIn {
+  animation: fadeIn 0.4s ease;
+}
+
+
+/* ---------- Achievements styles  ---------- */
+#achievementsPage { display: none; align-items: center; justify-content: center; }
+#achievementsPage.active { display: flex; }
+
+.achievements-card {
+  width: 92%;
+  max-width: 1000px;
+  background: rgba(6,8,26,0.92);
+  border-radius: 1rem;
+  padding: 2rem;
+  border: 1px solid rgba(255,255,255,0.04);
+  box-shadow: 0 12px 40px rgba(0,0,0,0.45);
+  position: relative;
+  color: #e6eef8;
+}
+
+.ach-grid {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 1rem;
+  margin-top: 0.75rem;
+}
+
+.ach-item {
+  background: rgba(255,255,255,0.03);
+  padding: 1rem;
+  border-radius: 0.8rem;
+  min-height: 84px;
+  display:flex;
+  flex-direction:column;
+  justify-content:center;
+  transition: transform 180ms ease, background 180ms ease, opacity 180ms ease;
+  cursor: pointer;
+  border: 1px solid rgba(255,255,255,0.02);
+}
+
+.ach-item:hover { transform: translateY(-6px); background: rgba(255,255,255,0.045); }
+
+.ach-item.locked { opacity: 0.55; cursor: default; pointer-events: none; }
+.ach-item.unlocked { box-shadow: 0 6px 18px rgba(34,197,94,0.12); border-left: 4px solid #10b981; }
+
+.ach-title { font-weight: 800; font-size: 1.02rem; margin:0; }
+.ach-sub { color: #9aa8c9; font-size: 0.9rem; margin-top:6px; }
+
+/* single-row full-width achievement */
+.ach-full { grid-column: 1 / -1; }
+
+/* center the back button */
+.ach-actions { display:flex; justify-content:center; margin-top:1.25rem; }
+.ach-back-btn {
+  padding: 0.65rem 1rem;
+  border-radius: 12px;
+  font-weight: 700;
+  background: linear-gradient(90deg,#7c3aed,#06b6d4);
+  color: white;
+  border: none;
+  cursor:pointer;
+  box-shadow: 0 8px 18px rgba(0,0,0,0.25);
+  transition: transform 150ms ease;
+}
+.ach-back-btn:hover { transform: translateY(-3px); }
+
+/* responsive */
+@media (max-width:820px) {
+  .ach-grid { grid-template-columns: 1fr; }
+}
+
+
+#gameTitle {
+  position: fixed;
+  top: 1rem;
+  left: 1.5rem;
+  z-index: 50;
+  text-align: left;
+  animation: nounce 2s ease-in-out infinite;
+}
+
+.main-title {
+  font-family: 'Inter', sans-serif;
+  font-size: 2rem; /* Bigger main title */
+  font-weight: 800;
+  background: linear-gradient(90deg, #7b2ff7, #f107a3);
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+  text-shadow: 0 0 12px rgba(255, 0, 255, 0.3);
+  letter-spacing: 1px;
+}
+
+.sub-title {
+  font-family: 'Inter', sans-serif;
+  font-size: 1.6rem; /* Smaller subtitle */
+  font-weight: 500;
+  background: linear-gradient(90deg, #7b2ff7, #f107a3);
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+  letter-spacing: 0.5px;
+  margin-top: -5px;
+}
+
+/* Bounce animation */
+@keyframes nounce {
+  0%, 100% { transform: translateY(0); }
+  50% { transform: translateY(-6px); }
+}
+
+
+#profilePanel {
+  position: fixed;
+  top: 0;
+  right: 0;
+  height: 100vh;
+  width: 320px;
+  max-width: 92%;
+  background: linear-gradient(180deg, rgba(255,245,235,0.98), rgba(255,240,220,0.95));
+  border-left: 3px solid rgba(249,115,22,0.9);
+  box-shadow: 0 20px 60px rgba(0,0,0,0.55);
+  transform: translateX(100%); /* hidden by default */
+  transition: transform 420ms cubic-bezier(.2,.9,.25,1);
+  padding: 20px;
+  z-index: 2500;
+  overflow-y: auto;
+  border-top-left-radius: 18px;
+  border-bottom-left-radius: 18px;
+  color: #2b2b2b;
+}
+
+/* Panel open state */
+#profilePanel.open { transform: translateX(0); }
+
+/* Avatar preview fallback styling */
+#avatarPreview {
+  width: 92px;
+  height: 92px;
+  border-radius: 999px;
+  object-fit: cover;
+  border: 3px solid rgba(249,115,22,0.85);
+  display: block;
+  margin: 0 auto 12px auto;
+}
+
+/* Small: push button to fit mobile */
+@media (max-width:720px){
+  #profileBtn { right: 12px; }
+  #profilePanel { width: 92vw; }
+}
+
+
+/* Profile panel core styles (works w/ or w/o Tailwind) */
+#profileBtn {
+  position: fixed !important;
+  top: 12px !important;     /* move down */
+  right: 90px !important;  /* move left */
+  z-index: 3000 !important;
+  width: 40px;
+  height: 40px;
+  padding: 0;
+  border-radius: 999px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+  box-shadow: 0 8px 24px rgba(0,0,0,0.3);
+  background: linear-gradient(90deg, #fb923c, #f97316);
+  color: white;
+  border: none;
+  transition: opacity 0.4s ease, transform 0.4s ease;
+
+}
+#profileBtn img { width:100%; height:100%; object-fit:cover; border-radius:999px; display:block; }
+
+#profileBtn.hidden {
+  opacity: 0;
+  transform: scale(0.7);
+  pointer-events: none;
+}
+
+
+/* Panel (hidden by default, slides in when .open present) */
+#profilePanel {
+  position: fixed;
+  top: 0;
+  right: 0;
+  height: 100vh;
+  width: 320px;
+  max-width: 92%;
+  background: linear-gradient(180deg, rgba(17,24,39,0.98), rgba(10,10,20,0.98));
+  color: #fff;
+  transform: translateX(110%); /* hidden */
+  transition: transform 380ms cubic-bezier(.2,.9,.25,1), opacity 280ms ease;
+  z-index: 2999;
+  padding: 18px;
+  box-shadow: -18px 0 40px rgba(0,0,0,0.6);
+  border-left: 3px solid rgba(249,115,22,0.18);
+  overflow-y:auto;
+  border-top-left-radius: 14px;
+  border-bottom-left-radius: 14px;
+}
+
+/* open state */
+#profilePanel.open { transform: translateX(0); }
+
+/* avatar preview */
+#avatarPreview { width:96px; height:96px; border-radius:999px; object-fit:cover; display:block; margin: 0 auto 10px; border:3px solid rgba(249,115,22,0.9); }
+
+/* Close button inside panel */
+#closeProfileBtn {
+  display:inline-flex;
+  align-items:center;
+  justify-content:center;
+  gap:8px;
+  background: rgba(255,255,255,0.08);
+  color: #fff;
+  padding:8px 10px;
+  border:none;
+  border-radius:10px;
+  cursor:pointer;
+}
+
+/* small responsive adjustments */
+@media (max-width:720px){
+  #profileBtn { right: 12px; top: 10px; }
+  #profilePanel { width: 92vw; }
+}
+
+
+
+/* ---------- Achievements styles  ---------- */
+#achievementsPage { display: none; align-items: center; justify-content: center; }
+#achievementsPage.active { display: flex; }
+
+.achievements-card {
+  width: 92%;
+  max-width: 1000px;
+  background: rgba(6,8,26,0.92);
+  border-radius: 1rem;
+  padding: 2rem;
+  border: 1px solid rgba(255,255,255,0.04);
+  box-shadow: 0 12px 40px rgba(0,0,0,0.45);
+  position: relative;
+  color: #e6eef8;
+}
+
+.ach-grid {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 1rem;
+  margin-top: 0.75rem;
+}
+
+.ach-item {
+  background: rgba(255,255,255,0.03);
+  padding: 1rem;
+  border-radius: 0.8rem;
+  min-height: 84px;
+  display:flex;
+  flex-direction:column;
+  justify-content:center;
+  transition: transform 180ms ease, background 180ms ease, opacity 180ms ease;
+  cursor: pointer;
+  border: 1px solid rgba(255,255,255,0.02);
+}
+
+.ach-item:hover { transform: translateY(-6px); background: rgba(255,255,255,0.045); }
+
+.ach-item.locked { opacity: 0.55; cursor: default; pointer-events: none; }
+.ach-item.unlocked { box-shadow: 0 6px 18px rgba(34,197,94,0.12); border-left: 4px solid #10b981; }
+
+.ach-title { font-weight: 800; font-size: 1.02rem; margin:0; }
+.ach-sub { color: #9aa8c9; font-size: 0.9rem; margin-top:6px; }
+
+/* single-row full-width achievement */
+.ach-full { grid-column: 1 / -1; }
+
+/* center the back button */
+.ach-actions { display:flex; justify-content:center; margin-top:1.25rem; }
+.ach-back-btn {
+  padding: 0.65rem 1rem;
+  border-radius: 12px;
+  font-weight: 700;
+  background: linear-gradient(90deg,#7c3aed,#06b6d4);
+  color: white;
+  border: none;
+  cursor:pointer;
+  box-shadow: 0 8px 18px rgba(0,0,0,0.25);
+  transition: transform 150ms ease;
+}
+.ach-back-btn:hover { transform: translateY(-3px); }
+
+/* responsive */
+@media (max-width:820px) {
+  .ach-grid { grid-template-columns: 1fr; }
+}
+
+/* Achievements small styles (keeps your background/emoji intact) */
+.achievement-card {
+  background: rgba(255,255,255,0.02);
+  border: 1px solid rgba(255,255,255,0.03);
+  box-shadow: 0 6px 20px rgba(2,6,23,0.45);
+  transition: transform .22s ease, opacity .2s ease, border-color .2s ease;
+  cursor: pointer;
+}
+.achievement-card:hover { transform: translateY(-4px); 
+                          background: rgba(255,255,255,0.1);}
+
+.achievement-card.locked { opacity: 0.55; }
+
+.achievement-card.unlocked {
+  border-color: rgba(34,197,94,0.9);
+  background: linear-gradient(180deg, rgba(34,197,94,0.06), rgba(0,0,0,0.02));
+}
+.achievement-card .ach-status { font-size:0.92rem; }
+
+
+<!--=========CSS for LEADERBOARD=========-->
+/* 🏅 Leaderboard Page Styling */
+.box-container {
+  background: rgba(255,255,255,0.08);
+  padding: 25px;
+  border-radius: 20px;
+  width: 90%;
+  max-width: 450px;
+  margin: auto;
+  box-shadow: 0 0 15px rgba(0,0,0,0.3);
+  text-align: center;
+}
+
+.leaderboard-list {
+  margin-top: 15px;
+  background: rgba(255,255,255,0.05);
+  border-radius: 12px;
+  padding: 10px;
+  max-height: 300px;
+  overflow-y: auto;
+}
+
+.leaderboard-item {
+  display: flex;
+  justify-content: space-between;
+  padding: 10px;
+  margin: 6px 0;
+  background: rgba(255,255,255,0.08);
+  border-radius: 10px;
+  color: white;
+  font-weight: 500;
+  transition: background 0.3s;
+}
+.leaderboard-item:hover {
+  background: rgba(255,255,255,0.15);
+}
+
+.subtitle {
+  color: #ccc;
+  font-size: 14px;
+  margin-bottom: 10px;
+}
+
+.leaderboard-buttons {
+  display: flex;
+  justify-content: space-between;
+  margin-top: 20px;
+}
+
+.back-btn, .reset-btn {
+  flex: 1;
+  margin: 0 5px;
+  padding: 10px;
+  background: linear-gradient(135deg, #667eea, #764ba2);
+  border: none;
+  color: white;
+  border-radius: 10px;
+  cursor: pointer;
+  transition: 0.3s;
+}
+.reset-btn {
+  background: linear-gradient(135deg, #ff5f6d, #ffc371);
+}
+.back-btn:hover, .reset-btn:hover {
+  transform: scale(1.05);
+}
+
+
+/* small styling for items inside .card-bg */
+
+.leaderboard-list .leaderboard-item {
+  display:flex;
+  justify-content:space-between;
+  padding:10px 12px;
+  border-radius:10px;
+  background: rgba(255,255,255,0.03);
+  color:#fff;
+  font-weight:600;
+}
+
+.leaderboard-list .leaderboard-item.gold {
+  background: linear-gradient(135deg, #FFD700, #FFB800);
+  color: #222;
+}
+.leaderboard-list .leaderboard-item.silver {
+  background: linear-gradient(135deg, #C0C0C0, #E0E0E0);
+  color: #222;
+}
+.leaderboard-list .leaderboard-item.bronze {
+  background: linear-gradient(135deg, #CD7F32, #E09C5A);
+  color: #222;
+}
+
+
+
+
+/* 🥇🥈🥉 Colors */
+.leaderboard-item.gold {
+  background: linear-gradient(135deg, #FFD700, #FFB800);
+  color: #222;
+  font-weight: 700;
+}
+
+.leaderboard-item.silver {
+  background: linear-gradient(135deg, #C0C0C0, #E0E0E0);
+  color: #222;
+  font-weight: 600;
+}
+
+.leaderboard-item.bronze {
+  background: linear-gradient(135deg, #CD7F32, #E09C5A);
+  color: #222;
+  font-weight: 600;
+}
+
+.backButton {
+  background: linear-gradient(90deg, #ff7b00, #ffcc00);
+  border: none;
+  color: #222;
+  padding: 10px 20px;
+  border-radius: 12px;
+  font-weight: bold;
+  cursor: pointer;
+  transition: 0.3s;
+}
+
+.backButton:hover {
+  transform: scale(1.05);
+}
+
+  </style>
+</head>
+<body>
+
+
+<!-- PROFILE: button + panel -->
+<button id="profileBtn" aria-label="Open profile" class="rounded-full shadow-lg bg-orange-500 hover:bg-orange-600 p-2 text-white">
+  <span id="profileIcon">👤</span>
+  <img id="profilePhoto" src="" alt="profile photo" style="display:none;" />
+</button>
+
+<aside id="profilePanel" role="dialog" aria-hidden="true" aria-label="Profile panel">
+  <h3 style="text-align:center; margin:6px 0 12px; font-weight:800; color:#ffb86b;">Your Profile</h3>
+
+  <img id="avatarPreview" src="" alt="avatar preview" style="display:none;" />
+
+  <form id="profileForm" style="display:flex; flex-direction:column; gap:10px;">
+    <label style="font-weight:700; color:#ffd8a8;">Full name</label>
+    <input id="profileName" type="text" placeholder="Full name" style="padding:8px; border-radius:8px; border:1px solid rgba(255,255,255,0.06); background: rgba(255,255,255,0.02); color:#fff;" required>
+
+    <label style="font-weight:700; color:#ffd8a8;">Username</label>
+    <input id="profileUsername" type="text" placeholder="Nickname" style="padding:8px; border-radius:8px; border:1px solid rgba(255,255,255,0.06); background: rgba(255,255,255,0.02); color:#fff;">
+
+    <label style="font-weight:700; color:#ffd8a8;">Email</label>
+    <input id="profileEmail" type="email" placeholder="you@example.com" style="padding:8px; border-radius:8px; border:1px solid rgba(255,255,255,0.06); background: rgba(255,255,255,0.02); color:#fff;">
+
+    <label style="font-weight:700; color:#ffd8a8;">Age</label>
+    <input id="profileAge" type="number" min="5" max="120" placeholder="Age" style="padding:8px; border-radius:8px; border:1px solid rgba(255,255,255,0.06); background: rgba(255,255,255,0.02); color:#fff;">
+
+    <label style="font-weight:700; color:#ffd8a8;">Upload Profile Picture</label>
+    <input id="profilePicInput" type="file" accept="image/*" style="padding:6px; border-radius:8px; background: rgba(255,255,255,0.02); color:#fff;">
+
+    <div style="display:flex; gap:10px; margin-top:6px;">
+      <button id="saveProfileBtn" type="submit" style="flex:1; background: linear-gradient(90deg,#fb923c,#f97316); color:#fff; border:none; padding:10px; border-radius:10px; cursor:pointer;">Save</button>
+      <button id="closeProfileBtn" type="button" aria-label="Close profile panel">Close</button>
+    </div>
+
+    <div style="font-size:12px; color:#d9bfa3; text-align:center; margin-top:8px;">Saved locally on this device</div>
+  </form>
+</aside>
+
+
+<!-- Game title (always visible at top-left) -->
+<div id="gameTitle" class="fixed top-4 left-6 text-2xl font-extrabold tracking-wide z-50 select-none">
+  <span class="main-title">QuizArena-</span><br>
+  <span class="sub-title">Multiplayer Quiz Game</span>
+</div>
+
+
+
+  <!-- Floating emojis -->
+  <div class="emoji-bg" id="emojiBg"></div>
+
+  <!-- Quick Play DISCOVER-like overlay -->
+  <div id="qpDiscoverOverlay" class="qp-discover-overlay">
+    <div class="qp-discover-card card-bg">
+      <div style="display:flex; justify-content:space-between; align-items:center; gap:12px;">
+        <div>
+          <div class="qp-title">⚡ Quick Play Mode</div>
+          <div class="qp-sub">Select difficulty and start a 5-question mix (1 per category).</div>
+        </div>
+        <div>
+          <select id="qpDifficultySelect" class="rounded-md px-3 py-2 bg-gray-800 text-white font-semibold">
+            <option value="mixed">Mixed difficulty (Standard)</option>
+            <option value="easy">Easy</option>
+            <option value="medium">Medium</option>
+            <option value="hard">Hard</option>
+          </select>
+        </div>
+      </div>
+
+      <div class="qp-grid">
+        <div id="qpDiscover-movies" class="category-card qp-movies" style="background: linear-gradient(135deg, rgba(120,30,40,0.15), rgba(0,0,0,0.15)); cursor:pointer;">
+          <div class="energy-pulse"></div>
+          <h3>🎬 Movies & Cinema</h3>
+          <p>From classic films to modern blockbusters.</p>
+        </div>
+        <div id="qpDiscover-science" class="category-card qp-science" style="background: linear-gradient(135deg, rgba(10,80,140,0.12), rgba(0,0,0,0.12)); cursor:pointer;">
+          <div class="energy-pulse"></div>
+          <h3>🔬 Science & Nature</h3>
+          <p>Physics, chemistry, biology, and space.</p>
+        </div>
+        <div id="qpDiscover-history" class="category-card qp-history" style="background: linear-gradient(135deg, rgba(120,100,30,0.12), rgba(0,0,0,0.12)); cursor:pointer;">
+          <div class="energy-pulse"></div>
+          <h3>🏛️ World History</h3>
+          <p>Ancient empires, wars, and pivotal events.</p>
+        </div>
+        <div id="qpDiscover-sports" class="category-card qp-sports" style="background: linear-gradient(135deg, rgba(20,90,40,0.12), rgba(0,0,0,0.12)); cursor:pointer;">
+          <div class="energy-pulse"></div>
+          <h3>🏀 Global Sports</h3>
+          <p>Trivia on leagues, athletes, and championships.</p>
+        </div>
+
+        <div style="grid-column: 1 / -1; margin-top:18px;">
+          <button id="qpDiscoverBack" class="menu-btn blue">⬅️ Back to Main Menu</button>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Countdown overlay -->
+  <div id="countdownOverlay" class="countdown-overlay">
+    <div id="countdownNumber" class="countdown-number">3</div>
+  </div>
+
+  <!-- SIGN-IN PAGE -->
+  <div id="signinPage" class="page active">
+    <div class="card-bg" style="width: 400px;">
+      <h1 class="text-4xl font-extrabold mb-2 tracking-tight">QuizArena</h1>
+      <p class="text-gray-400 mb-8">Login to enter the arena</p>
+
+      <input id="email" type="email" placeholder="Email"
+        class="w-full p-3 mb-4 rounded-lg bg-gray-700 border border-gray-600 text-white placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-cyan-400"/>
+
+      <input id="password" type="password" placeholder="Password"
+        class="w-full p-3 mb-6 rounded-lg bg-gray-700 border border-gray-600 text-white placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-cyan-400"/>
+
+      <button id="signinBtn" class="menu-btn blue">Sign In</button>
+
+      <div class="my-6 text-gray-400 font-semibold">OR</div>
+
+      <input id="guestName" placeholder="Enter Guest Name"
+        class="w-full p-3 mb-4 rounded-lg bg-gray-700 border border-gray-600 text-white placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-purple-400"/>
+
+      <button id="guestBtn" class="menu-btn blue">Continue as Guest</button>
+
+      <p class="text-sm text-gray-500 mt-6">© 2025 QuizArena</p>
+    </div>
+  </div>
+
+  <!-- WELCOME PAGE -->
+  <div id="welcomePage" class="page flex-col justify-center items-center">
+    <div class="card-bg text-center" style="width: 400px;">
+      <h1 class="text-3xl font-extrabold mb-2">Welcome to QuizArena</h1>
+      <p id="welcomeMessage" class="text-gray-300 mb-6 text-lg">Welcome!</p>
+      <button id="nextBtn" class="menu-btn blue">Next</button>
+    </div>
+  </div>
+
+<!-- 🔊 Background Music + Settings -->
+<audio id="bgMusic" loop>
+  <source src="sounds/bg-music.mp3" type="audio/mp3">
+</audio>
+
+
+
+<div id="settingsContainer" class="fixed top-3 right-3 z-50">
+  <button id="settingsBtn" class="bg-gray-800 text-white rounded-full p-2 hover:bg-gray-700 shadow-lg">
+    ⚙️
+  </button>
+
+  <!-- Pop-down settings panel -->
+  <div id="settingsPanel" class="hidden mt-2 bg-gray-900 text-white p-4 rounded-xl shadow-lg w-48">
+    <label for="volumeControl" class="block text-sm font-semibold mb-2">🎧 Volume</label>
+    <input id="volumeControl" type="range" min="0" max="1" step="0.01" value="0.5" class="w-full mb-3">
+    <button id="muteBtn" class="menu-btn red w-full">🔇 Mute</button>
+<!-- Theme Switch -->
+<div class="mt-6 flex items-center justify-center gap-3">
+  <label class="font-semibold">Theme:</label>
+  <select id="themeSelect" class="rounded-md px-3 py-2 bg-gray-800 text-white font-semibold">
+    <option value="dark">Dark</option>
+    <option value="light">Light</option>
+    <option value="midnight">Midnight</option>
+  </select>
+</div>
+
+  </div>
+</div>
+
+
+  <!-- HOME / MAIN MENU PAGE -->
+  <div id="homePage" class="page flex-col justify-center items-center">
+    <div class="card-bg text-center" style="width: 420px;">
+      <h2 class="text-3xl font-bold mb-4">Main Menu</h2>
+      <button class="menu-btn bg-blue-500 hover:bg-gray-600" onclick="showPage('discoverPage')">🧭 Discover Categories</button>
+      <!-- Quick Play button kept in same position, now opens the Discover-like Quick Play card -->
+      <button id="quickPlayBtn" class="menu-btn bg-indigo-500 hover:bg-gray-600">⚡ Quick Play</button>
+      <button id="joinRoomBtn" class="menu-btn bg-cyan-500 hover:bg-gray-600">👥 Join a Room (Multiplayer)</button>
+      <button class="menu-btn bg-yellow-500 hover:bg-gray-600" onclick="showPage('leaderboardPage'); renderLeaderboard();">🏆 Global Leaderboard</button>
+      <button class="menu-btn bg-pink-500 hover:bg-gray-600" onclick="showPage('achievementsPage')">🎖️ Achievements</button>
+      <button class="menu-btn bg-orange-500 hover:bg-gray-600" onclick="showPage('minicg')">🔥 Power Card Games</button>
+      <button class="menu-btn bg-red-500 hover:bg-gray-600" onclick="showPage('signinPage')">↩️ Sign Out</button>
+    </div>
+  </div>
+
+
+<!-- Join Room Overlay -->
+<div id="joinRoomOverlay" class="flex" style="display: none; position: fixed; inset: 0; background: rgba(0,0,0,0.6); justify-content: center; align-items: center; z-index: 50;">
+  <div class="join-room-card bg-gray-900 text-white rounded-2xl p-8 w-11/12 max-w-md text-center shadow-xl">
+    <h2 class="text-2xl font-bold mb-3">Join Multiplayer Room</h2>
+    <p class="text-gray-300 mb-4 text-sm">Enter a room code to join your friends.</p>
+    <input id="roomCodeInput" type="text" placeholder="Enter Room Code (e.g. 478294)"
+      class="w-full p-2 rounded-lg text-gray-900 mb-4 text-center outline-none" />
+    <button id="confirmJoin" class="w-full bg-emerald-500 hover:bg-emerald-600 py-2 rounded-lg font-semibold mb-3">🔗 Join Room</button>
+    <button id="backToMenu" class="menu-btn blue">⬅ Back to Main Menu</button>
+  </div>
+</div>
+
+
+
+<!-- Multiplayer Lobby Overlay -->
+<div id="multiplayerLobby" class="flex hidden fixed inset-0 bg-black bg-opacity-60 justify-center items-center z-50">
+  <div class="bg-gray-900 text-white rounded-2xl p-8 w-11/12 max-w-md text-center shadow-2xl animate-fadeIn">
+    <h2 class="text-3xl font-bold mb-3">🎮 Multiplayer Lobby</h2>
+    <p class="text-gray-300 mb-6">Waiting for other players to join...</p>
+    <button id="returnToMenu" class="menu-btn blue mt-6 w-full relative z-10">⬅ Back to Main Menu</button>
+  </div>
+</div>
+
+
+<!-- ===== Leaderboard Page (with demo table) ===== -->
+<div id="leaderboardPage" class="page">
+  <div class="card-bg" style="width:820px; max-width:92%; text-align:left;">
+    <!-- Header -->
+<div style="width:100%; text-align:center; margin-bottom:15px;">
+      <div>
+ <div style="font-size:1.5rem; font-weight:800; text-align:center;">🏅 Global Leaderboard</div>
+  <div style="color:#9aa8c9; margin-top:6px; font-size:1.1rem;">Top QuizArena Players</div>
+      </div>
+    </div>
+
+
+    <!-- Demo Leaderboard List -->
+    <div id="leaderboardList" class="leaderboard-list" style="
+         margin-top:18px;
+         display:flex;
+         flex-direction:column;
+         gap:10px;
+         max-height:360px;
+         overflow:auto;
+         ">
+
+      <div class="leaderboard-item gold">
+        <span>🥇 1. Arjun Mehta</span>
+        <span>125 pts</span>
+      </div>
+
+      <div class="leaderboard-item silver">
+        <span>🥈 2. Priya Sharma</span>
+        <span>110 pts</span>
+      </div>
+
+      <div class="leaderboard-item bronze">
+        <span>🥉 3. Rohan Das</span>
+        <span>98 pts</span>
+      </div>
+
+      <div class="leaderboard-item">
+        <span>4. Sneha Patel</span>
+        <span>85 pts</span>
+      </div>
+
+      <div class="leaderboard-item">
+        <span>5. Karan Verma</span>
+        <span>72 pts</span>
+      </div>
+    </div>
+
+    <!-- Back Button -->
+    <div style="display:flex; justify-content:center; margin-top:20px;">
+      <button onclick="showPage('homePage')" class="menu-btn blue" style="padding:10px 18px;">
+        ⬅️ Back to Main Menu
+      </button>
+    </div>
+  </div>
+</div>
+<!-- ===== end Leaderboard Page ===== -->	
+
+
+
+  <!-- DISCOVER CATEGORIES PAGE -->
+  <div id="discoverPage" class="page flex-col justify-center items-center">
+    <div class="card-bg text-center" style="width: 600px; position: relative;">
+      <h2 class="text-3xl font-bold mb-6">Discover New Quizzes</h2>
+
+<div class="grid grid-cols-2 gap-4 text-left">
+
+  <!-- 🎬 Movies & Cinema -->
+  <div id="cat-movies" class=" category-card qp-movies bg-gray-800 p-4 rounded-lg hover:bg-gray-700 transition relative overflow-hidden">
+    <div class="energy-pulse"></div>
+    <h3 class="font-semibold text-lg mb-1 relative z-10">🎬 Movies & Cinema</h3>
+          <p class="text-gray-400 text-sm relative z-10">From classic films to modern blockbusters.</p>
+        </div>
+
+  <!-- 🔬 Science & Nature -->
+  <div id="cat-science" class="category-card qp-science bg-gray-800 p-4 rounded-lg hover:bg-gray-700 transition relative overflow-hidden">
+    <div class="energy-pulse"></div>
+    <h3 class="font-semibold text-lg mb-1 relative z-10">🔬 Science & Nature</h3>
+    <p class="text-gray-400 text-sm relative z-10">Physics, chemistry, biology, and space.</p>
+    <div class="bubbles"></div>
+  </div>
+
+  <!-- 🏛️ World History -->
+  <div id="cat-history" class="category-card qp-history bg-gray-800 p-4 rounded-lg hover:bg-gray-700 transition relative overflow-hidden">
+    <div class="energy-pulse"></div>
+    <h3 class="font-semibold text-lg mb-1 relative z-10">🏛️ World History</h3>
+    <p class="text-gray-400 text-sm relative z-10">Ancient empires, wars, and pivotal events.</p>
+    <div class="falling-sand"></div>
+  </div>
+
+  <!-- 🏀 Global Sports -->
+  <div id="cat-sports" class="category-card qp-sports bg-gray-800 p-4 rounded-lg hover:bg-gray-700 transition relative overflow-hidden">
+    <div class="energy-pulse"></div>
+    <h3 class="font-semibold text-lg mb-1 relative z-10">🏀 Global Sports</h3>
+    <p class="text-gray-400 text-sm relative z-10">Trivia on leagues, athletes, and championships.</p>
+    <div class="wind-trails"></div>
+  </div>
+
+<div class="col-span-2">
+  <button onclick="showPage('homePage')" 
+          class="menu-btn blue mt-6 w-full relative z-10">
+    ⬅️ Back to Main Menu
+  </button>
+</div>
+
+</div>
+</div>
+
+  </div>
+
+  <!-- DIFFICULTY SELECTION PAGE (appears after picking a category) -->
+  <div id="difficultyPage" class="page flex-col justify-center items-center">
+    <div class="card-bg text-center" style="width: 520px; position: relative;">
+      <h2 id="diffTitle" class="text-2xl font-bold mb-4">Choose Difficulty</h2>
+      <p id="diffSubtitle" class="text-gray-300 mb-4">Pick a difficulty to start the quiz</p>
+
+      <div class="grid grid-cols-3 gap-4 mb-4">
+        <button id="diff-easy" class="menu-btn green difficulty-card">Easy 😜</button>
+        <button id="diff-medium" class="menu-btn amber difficulty-card">Medium 👌🏻</button>
+        <button id="diff-hard" class="menu-btn red difficulty-card">Hard 😱</button>
+      </div>
+
+      <button id="backToDiscoverFromDiff" class="menu-btn blue">⬅️ Back to Discover Categories</button>
+    </div>
+  </div>
+
+  <!-- QUIZ PAGE -->
+  <div id="quizPage" class="page flex-col justify-center items-center">
+    <div class="quiz-container card-bg">
+      <div style="display:flex; justify-content:space-between; align-items:center;">
+        <div>
+          <h3 id="quizHeader" class="text-xl font-bold">Category — Difficulty</h3>
+          <p id="quizSub" class="text-gray-300 text-sm">Question <span id="qIndex">1</span> of 5</p>
+        </div>
+        <div style="text-align:right;">
+          <p id="currentCategory" class="text-gray-300 text-sm"></p>
+        </div>
+      </div>
+
+      <!-- Top-right timer + score (used for Quick Play only) -->
+      <div class="top-stats" id="topStats" style="display:none;">
+        <div class="stat" id="scoreDisplay">Score: 0</div>
+        <div class="stat" id="timerDisplay">00:00</div>
+      </div>
+
+      <div class="question-box mt-4" id="questionBox">
+        <!-- question content will be injected here with animated classes -->
+        <div id="questionContent"></div>
+      </div>
+
+      <div class="progress-bar">
+        <div id="progressInner" class="progress-inner" style="width:0%"></div>
+      </div>
+
+      <div class="center-controls">
+        <button id="btnBackQ" class="small-btn bg-gray-700 rounded-md">Back</button>
+        <button id="btnNextQ" class="small-btn blue">Next</button>
+      </div>
+
+      <div style="display:flex; justify-content:space-between; margin-top:10px;">
+        <button id="quitQuizBtn" class="menu-btn orange w-1/3">Quit</button>
+        <div style="width:1px"></div><div style="width:1px"></div><div style="width:1px"></div><div style="width:1px"></div>
+        <button id="jumpToDiscover" class="menu-btn blue w-1/3">Back to Discover Categories</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- SCORE SUMMARY PAGE -->
+  <div id="summaryPage" class="page flex-col justify-center items-center">
+    <div class="summary-box card-bg">
+      <h2 id="summaryTitle" class="text-2xl font-bold mb-2">You've finished!</h2>
+      <p id="summaryScore" class="text-gray-300 mb-4">You scored X/5</p>
+      <div style="display:flex; gap:0.6rem; justify-content:center;">
+        <button id="tryAgainBtn" class="menu-btn cyan" style="width:150px">Try Again</button>
+        <button id="backToDiscoverFromSummary" class="menu-btn blue" style="width:220px">Back</button>
+      </div>
+    </div>
+  </div>
+  </div>
+
+
+
+<!-- ===== Achievements Page ===== -->
+<div id="achievementsPage" class="page">
+  <div class="card-bg" style="width:920px; max-width:92%; text-align:left;">
+    <div style="display:flex; align-items:center; gap:12px; margin-bottom:20px;">
+      <div style="font-size:26px; font-weight:800;">🎖️</div>
+      <div>
+        <div style="font-size:1.5rem; font-weight:800;">Milestone Tracker</div>
+        <div style="color:#9aa8c9; opacity:0.9;">Click an achievement card to see how it unlocks.</div>
+      </div>
+    </div>
+
+    <div id="achievementsList" style="display:grid; grid-template-columns: repeat(3, 1fr); gap:14px;">
+      <!-- 1 -->
+      <div class="achievement-card" data-id="quizStarter" style="min-height:72px; padding:18px; border-radius:12px;">
+        <div style="font-weight:800; font-size:1.05rem;">Quiz Starter 
+          <span class="ach-status" style="float:right; font-weight:700; color:#9aa8c9;">Locked</span>
+        </div>
+        <div style="color:#cbd5e1; opacity:0.9; margin-top:6px;">Complete 1 quiz.</div>
+      </div>
+
+      <!-- 2 -->
+      <div class="achievement-card" data-id="tenSolver" style="min-height:72px; padding:18px; border-radius:12px;">
+        <div style="font-weight:800; font-size:1.05rem;">Ten Solver 
+          <span class="ach-status" style="float:right; font-weight:700; color:#9aa8c9;">Locked</span>
+        </div>
+        <div style="color:#cbd5e1; opacity:0.9; margin-top:6px;">Complete 10 quizzes.</div>
+      </div>
+
+      <!-- 3 -->
+      <div class="achievement-card" data-id="pointHunter" style="min-height:72px; padding:18px; border-radius:12px;">
+        <div style="font-weight:800; font-size:1.05rem;">Point Hunter 
+          <span class="ach-status" style="float:right; font-weight:700; color:#9aa8c9;">Locked</span>
+        </div>
+        <div style="color:#cbd5e1; opacity:0.9; margin-top:6px;">Achieve a total score of 20 points.</div>
+      </div>
+
+      <!-- 4 -->
+      <div class="achievement-card" data-id="flawlessVictor" style="min-height:72px; padding:18px; border-radius:12px;">
+        <div style="font-weight:800; font-size:1.05rem;">Flawless Victor 
+          <span class="ach-status" style="float:right; font-weight:700; color:#9aa8c9;">Locked</span>
+        </div>
+        <div style="color:#cbd5e1; opacity:0.9; margin-top:6px;">Score 5/5 in any single quiz.</div>
+      </div>
+
+      <!-- 5 -->
+      <div class="achievement-card" data-id="speedRunner" style="min-height:72px; padding:18px; border-radius:12px;">
+        <div style="font-weight:800; font-size:1.05rem;">Speed Runner 
+          <span class="ach-status" style="float:right; font-weight:700; color:#9aa8c9;">Locked</span>
+        </div>
+        <div style="color:#cbd5e1; opacity:0.9; margin-top:6px;">Finish a quiz in under 30 seconds (Quick Play).</div>
+      </div>
+
+      <!-- 6 -->
+      <div class="achievement-card" data-id="categoryMaster" style="min-height:72px; padding:18px; border-radius:12px;">
+        <div style="font-weight:800; font-size:1.05rem;">Category Master 
+          <span class="ach-status" style="float:right; font-weight:700; color:#9aa8c9;">Locked</span>
+        </div>
+        <div style="color:#cbd5e1; opacity:0.9; margin-top:6px;">Complete at least one quiz from every category.</div>
+      </div>
+    </div>
+
+    <!-- 🟢 Button at the bottom -->
+    <div style="display:flex; justify-content:center; margin-top:28px;">
+      <button id="backToHomeFromAchievements" class="menu-btn blue" style="padding:10px 16px;">⬅ Back to Main Menu</button>
+    </div>
+  </div>
+</div>
+<!-- ===== end Achievements Page ===== -->
+	
+<!-- POWER CARD MINI GAMES PAGE -->
+<div id="minicg" class="page flex-col justify-center items-center">
+  <div class="card-bg text-center" style="width: 600px;">
+    <h2 class="text-3xl font-bold mb-6">🔥 Power Card Games</h2>
+    <p class="text-gray-300 mb-4">Play exciting mini games and earn bonus points!</p>
+
+    <div class="grid grid-cols-2 gap-4 text-left">
+      <button onclick="startMiniGame('memory')" class="menu-btn pink ">🧠 Memory Match</button>
+      <button onclick="startMiniGame('flip')" class="menu-btn cyan">🎴 Card Flip</button>
+      <button onclick="startMiniGame('guess')" class="menu-btn green">🔮 Guess the Number</button>
+      <button onclick="startMiniGame('reaction')" class="menu-btn amber">⚡ Reaction Speed</button>
+      <button onclick="startMiniGame('math')" class="menu-btn indigo">➗ Quick Math</button>
+      <button onclick="startMiniGame('rps')" class="menu-btn red">✊ Rock Paper Scissors</button>
+    </div>
+
+    <button onclick="showPage('homePage')" class="menu-btn blue mt-6 w-full">⬅️ Back to Main Menu</button>
+  </div>
+</div>
+
+<!-- MINI GAME CONTAINER -->
+<div id="miniGamePage" class="page flex-col justify-center items-center">
+  <div class="card-bg text-center" style="width: 480px;">
+    <h2 id="miniGameTitle" class="text-2xl font-bold mb-4">Mini Game</h2>
+    <div id="miniGameContainer" class="text-gray-200 mb-4">Game content will appear here...</div>
+    <button onclick="showPage('minicg')" class="menu-btn blue mt-4">⬅️ Back to Games</button>
+  </div>
+</div>
+
+  <script>
+
+    // Floating emojis
+    const emojis = ["⭐","🔥","🎯","💫","⚡","🌈","🎮","🎉","💎","✨"];
+    const emojiBg = document.getElementById("emojiBg");
+    for(let i=0; i<25; i++){
+      const span = document.createElement("span");
+      span.textContent = emojis[Math.floor(Math.random()*emojis.length)];
+      span.style.left = Math.random()*100 + "vw";
+      span.style.animationDuration = (10 + Math.random()*10) + "s";
+      span.style.fontSize = (1.5 + Math.random()*1.5) + "rem";
+      span.style.animationDelay = (Math.random()*5) + "s";
+      emojiBg.appendChild(span);
+    }
+
+    function showPage(id){
+      document.querySelectorAll(".page").forEach(p=>p.classList.remove("active"));
+      document.getElementById(id).classList.add("active");
+      window.scrollTo(0,0);
+    }
+
+    // Sign in and guest logic
+    document.getElementById("signinBtn").onclick = ()=>{
+      const email = document.getElementById("email").value.trim();
+      const password = document.getElementById("password").value.trim();
+      if(email && password){
+        document.getElementById("welcomeMessage").textContent = `Welcome, ${email.split('@')[0]}!`;
+        showPage("welcomePage");
+      } else alert("Please enter both email and password, or continue as guest.");
+    };
+
+    document.getElementById("guestBtn").onclick = ()=>{
+      const guestName = document.getElementById("guestName").value.trim();
+      if(guestName){
+        document.getElementById("welcomeMessage").textContent = `Welcome, ${guestName}!`;
+        showPage("welcomePage");
+      } else alert("Please enter a guest name to continue.");
+    };
+
+    document.getElementById("nextBtn").onclick = ()=> showPage("homePage");
+
+    // Sample question data (as before)
+
+  // ------------------------
+  // QUESTION DATA (expanded)
+  // ------------------------
+  const data = {
+    "Movies": {
+      "easy": [
+        { q: "Which movie features the character 'Forrest Gump'?", options: ["Cast Away","Forrest Gump","The Green Mile","Apollo 13"], answer: 1 },
+        { q: "In 'Toy Story', who is the cowboy doll?", options: ["Buzz Lightyear","Woody","Mr. Potato Head","Rex"], answer: 1 },
+        { q: "Which film launched the Marvel Cinematic Universe in 2008?", options: ["Thor","Iron Man","The Incredible Hulk","Captain America"], answer: 1 },
+        { q: "Which movie includes the line, 'May the Force be with you'?", options: ["Star Trek","Star Wars","Guardians of the Galaxy","Dune"], answer: 1 },
+        { q: "Which actor played Jack Dawson in 'Titanic' (1997)?", options: ["Brad Pitt","Leonardo DiCaprio","Tom Cruise","Matt Damon"], answer: 1 },
+
+        // +10 realistic additions
+        { q: "Which animated movie features a princess named Elsa?", options: ["Tangled","Frozen","Moana","Brave"], answer: 1 },
+  { q: "Tom Hanks starred in 'Forrest Gump'.", options: ["True","False"], answer: 1 },
+  { q: "'The Godfather' was released in 1980.", options: ["True","False"], answer: 0 },
+  { q: "'Frozen' is a live-action movie.", options: ["True","False"], answer: 0 },
+  { q: "'The Matrix' stars Keanu Reeves.", options: ["True","False"], answer: 1 },
+  { q: "'Jaws' was directed by Steven Spielberg.", options: ["True","False"], answer: 1 },
+  { q: "'Titanic' is a science fiction movie.", options: ["True","False"], answer: 0 },
+  { q: "'Avengers: Endgame' was released before 'Avengers: Infinity War'.", options: ["True","False"], answer: 0 },
+        { q: "Which movie is a superhero origin story about Bruce Wayne?", options: ["Taxi Driver","The Dark Knight Rises","Batman Begins","Joker"], answer: 2 },
+        { q: "Which film franchise includes the character 'Darth Vader'?", options: ["Star Wars","Star Trek","Battlestar Galactica","Alien"], answer: 0 }
+      ],
+      "medium": [
+        { q: "Who directed 'Pulp Fiction'?", options: ["Quentin Tarantino","Steven Spielberg","Martin Scorsese","David Fincher"], answer: 0 },
+        { q: "'The Grand Budapest Hotel' was directed by which filmmaker?", options: ["Wes Anderson","Paul Thomas Anderson","Spike Jonze","Noah Baumbach"], answer: 0 },
+        { q: "Which 1994 film stars Tim Robbins and Morgan Freeman set in a prison?", options: ["The Green Mile","The Shawshank Redemption","Se7en","Heat"], answer: 1 },
+        { q: "In 'Inception', what is used to determine whether one is in a dream?", options: ["Coin","Top","Watch","Ring"], answer: 1 },
+        { q: "Who composed the music for 'Jurassic Park'?", options: ["John Williams","Hans Zimmer","James Horner","Danny Elfman"], answer: 0 },
+
+        // +10 realistic additions
+        { q: "Which actor played the Joker in 'The Dark Knight' (2008)?", options: ["Heath Ledger","Joaquin Phoenix","Jared Leto","Jack Nicholson"], answer: 0 },
+  { q: "'The Dark Knight' features Heath Ledger as the Joker.", options: ["True","False"], answer: 1 },
+  { q: "The movie 'Avatar' was released in 2009.", options: ["True","False"], answer: 1 },
+  { q: "'Gladiator' won the Oscar for Best Picture in 2001.", options: ["True","False"], answer: 1 },
+  { q: "The film 'Parasite' won the Best Picture Oscar in 2020.", options: ["True","False"], answer: 1 },
+  { q: "'Jurassic Park' was released after 'Jurassic World'.", options: ["True","False"], answer: 0 },
+  { q: "Scarlett Johansson played Black Widow in Marvel movies.", options: ["True","False"], answer: 1 },
+  { q: "'The Lion King' animated movie was released in 1994.", options: ["True","False"], answer: 1 },
+        { q: "Which film's score was composed by Hans Zimmer and features the 'Time' track?", options: ["Interstellar","The Dark Knight","Inception","Gladiator"], answer: 2 },
+        { q: "Which director is known for the movie 'There Will Be Blood'?", options: ["Paul Thomas Anderson","Spike Jonze"," Alejandro González Iñárritu","Terrence Malick"], answer: 0 }
+
+      ],
+      "hard": [
+        { q: "Which film won the Palme d'Or at Cannes in 2019?", options: ["Parasite","Once Upon a Time in Hollywood","Portrait of a Lady on Fire","The Lighthouse"], answer: 0 },
+        { q: "Who directed 'The Social Network' (2010)?", options: ["David Fincher","Christopher Nolan","Danny Boyle","Bennett Miller"], answer: 0 },
+        { q: "Which movie uses the narrative device 'Rashomon' to tell the same event from multiple perspectives?", options: ["Rashomon","The Usual Suspects","Memento","Mulholland Drive"], answer: 0 },
+        { q: "Which 1942 film starring Humphrey Bogart is set in Morocco and features the song 'As Time Goes By'?", options: ["Casablanca","The Maltese Falcon","Key Largo","To Have and Have Not"], answer: 0 },
+        { q: "Who was the cinematographer for 'Blade Runner' (1982)?", options: ["Jordan Cronenweth","Roger Deakins","Emmanuel Lubezki","Christopher Doyle"], answer: 0 },
+
+        // +10 realistic additions
+        { q: "Which Japanese director made 'Seven Samurai' (1954)?", options: ["Akira Kurosawa","Yasujiro Ozu","Kenji Mizoguchi","Hayao Miyazaki"], answer: 0 },  { q: "'Mad Max: Fury Road' won 6 Academy Awards.", options: ["True","False"], answer: 1 },
+  { q: "'No Country for Old Men' is based on a Stephen King novel.", options: ["True","False"], answer: 0 },
+  { q: "'The Shining' was directed by Stanley Kubrick.", options: ["True","False"], answer: 1 },
+  { q: "'The Godfather Part II' was released after 1980.", options: ["True","False"], answer: 0 },
+  { q: "Harrison Ford played Indiana Jones.", options: ["True","False"], answer: 1 },
+  { q: "'La La Land' won Best Picture at the Oscars.", options: ["True","False"], answer: 0 },
+  { q: "'The Social Network' is about Mark Zuckerberg.", options: ["True","False"], answer: 1 },
+        { q: "Which French New Wave director made 'Breathless' (À bout de souffle)?", options: ["François Truffaut","Jean-Luc Godard","Éric Rohmer","Claude Chabrol"], answer: 1 },
+        { q: "Which 1999 film directed by Sam Mendes explores the lives of British soldiers during World War I?", options: ["Saving Private Ryan","1917","The Hurt Locker","Atonement"], answer: 1 }
+      ]
+    },
+
+    "Science": {
+      "easy": [
+        { q: "What planet is known as the Red Planet?", options: ["Venus","Mars","Jupiter","Saturn"], answer: 1 },
+        { q: "Water freezes at 0 degrees on which temperature scale?", options: ["Fahrenheit","Celsius","Kelvin","Rankine"], answer: 1 },
+        { q: "What gas do plants primarily absorb from the air?", options: ["Oxygen","Nitrogen","Carbon Dioxide","Hydrogen"], answer: 2 },
+        { q: "What is H2O commonly called?", options: ["Salt","Water","Hydrogen Peroxide","Ammonia"], answer: 1 },
+        { q: "What particle has a negative charge?", options: ["Proton","Neutron","Electron","Photon"], answer: 2 },
+
+        // +10 realistic additions
+        { q: "What force keeps us on the ground?", options: ["Friction","Gravity","Magnetism","Buoyancy"], answer: 1 },
+  { q: "The Earth revolves around the Sun.", options: ["True","False"], answer: 1 },
+  { q: "Humans have 5 senses.", options: ["True","False"], answer: 1 },
+  { q: "The chemical symbol for Oxygen is O.", options: ["True","False"], answer: 1 },
+  { q: "Sound travels faster than light.", options: ["True","False"], answer: 0 },
+  { q: "Plants produce oxygen during photosynthesis.", options: ["True","False"], answer: 1 },
+  { q: "The human body has 206 bones.", options: ["True","False"], answer: 1 },
+  { q: "Electricity can flow through metals.", options: ["True","False"], answer: 1 },
+        { q: "Which gas is most abundant in Earth's atmosphere?", options: ["Oxygen","Nitrogen","Carbon Dioxide","Argon"], answer: 1 },
+        { q: "Which simple machine is an inclined plane wrapped around a cylinder?", options: ["Lever","Screw","Pulley","Wheel"], answer: 1 }
+
+      ],
+      "medium": [
+        { q: "What is the powerhouse of the cell?", options: ["Nucleus","Mitochondria","Ribosome","Chloroplast"], answer: 1 },
+        { q: "Speed of light in vacuum is approximately:", options: ["300,000 km/s","150,000 km/s","30,000 km/s","3,000 km/s"], answer: 0 },
+        { q: "Which element has the chemical symbol 'Fe'?", options: ["Fluorine","Francium","Iron","Fermium"], answer: 2 },
+        { q: "What is the main gas in Earth's atmosphere?", options: ["Oxygen","Carbon Dioxide","Nitrogen","Argon"], answer: 2 },
+        { q: "Who proposed the three laws of motion?", options: ["Einstein","Galileo","Newton","Kepler"], answer: 2 },
+
+        // +10 realistic additions
+        { q: "What is the chemical symbol for gold?", options: ["Gd","Au","Ag","Go"], answer: 1 },
+  { q: "Neutrons have a positive charge.", options: ["True","False"], answer: 0 },
+  { q: "The human heart has 4 chambers.", options: ["True","False"], answer: 1 },
+  { q: "The boiling point of water decreases at higher altitudes.", options: ["True","False"], answer: 1 },
+  { q: "Light is made of particles called photons.", options: ["True","False"], answer: 1 },
+  { q: "An atom consists of protons, neutrons, and electrons.", options: ["True","False"], answer: 1 },
+  { q: "Bacteria are multicellular organisms.", options: ["True","False"], answer: 0 },
+  { q: "Sound cannot travel in a vacuum.", options: ["True","False"], answer: 1 },
+        { q: "What phenomena causes long-range sound propagation due to temperature layers?", options: ["Refraction","Diffraction","Interference","Reflection"], answer: 0 },
+        { q: "Which law states that pressure and volume of a gas are inversely proportional (at constant temp)?", options: ["Charles' law","Boyle's law","Avogadro's law","Gay-Lussac's law"], answer: 1 }
+
+      ],
+      "hard": [
+        { q: "What is the term for an atom with the same number of protons but different neutrons?", options: ["Isobar","Isotope","Ion","Allotrope"], answer: 1 },
+        { q: "Which particle exchange is responsible for the electromagnetic force?", options: ["Gluon","Photon","W boson","Graviton"], answer: 1 },
+        { q: "The Pauli exclusion principle applies to which particles?", options: ["Bosons","Fermions","Photons","Gluons"], answer: 1 },
+        { q: "What is the approximate pH of pure water at 25°C?", options: ["1","7","14","10"], answer: 1 },
+        { q: "Which scientist is credited with discovering penicillin?", options: ["Alexander Fleming","Louis Pasteur","Robert Koch","Joseph Lister"], answer: 0 },
+
+        // +10 realistic additions
+        { q: "What is the primary difference between an ionic and covalent bond?", options: ["Electron sharing vs transferring","Atom size","Charge sign","Number of protons"], answer: 0 },
+  { q: "Neutrinos have almost no mass.", options: ["True","False"], answer: 1 },
+  { q: "The periodic table was created by Dmitri Mendeleev.", options: ["True","False"], answer: 1 },
+  { q: "The mitochondria is known as the powerhouse of the cell.", options: ["True","False"], answer: 1 },
+  { q: "Pluto is still officially classified as a planet.", options: ["True","False"], answer: 0 },
+  { q: "The human genome has approximately 3 billion base pairs.", options: ["True","False"], answer: 1 },
+  { q: "Quantum entanglement violates the laws of physics.", options: ["True","False"], answer: 0 },
+  { q: "Black holes can emit radiation, known as Hawking radiation.", options: ["True","False"], answer: 1 },
+        { q: "Which phenomenon explains the bending of light as it passes between media?", options: ["Reflection","Refraction","Diffraction","Interference"], answer: 1 },
+        { q: "What is the process by which DNA is copied to RNA called?", options: ["Translation","Replication","Transcription","Translocation"], answer: 2 }
+
+      ]
+    },
+
+    "History": {
+      "easy": [
+        { q: "Who was the first President of the United States?", options: ["Thomas Jefferson","George Washington","Abraham Lincoln","John Adams"], answer: 1 },
+        { q: "Which ancient civilization built the pyramids at Giza?", options: ["Romans","Greeks","Egyptians","Mesopotamians"], answer: 2 },
+        { q: "In which year did World War II end?", options: ["1945","1939","1918","1963"], answer: 0 },
+        { q: "The Great Wall of China is located in which country?", options: ["Japan","China","Mongolia","Korea"], answer: 1 },
+        { q: "Who discovered America in 1492 (commonly credited)?", options: ["Vasco da Gama","Christopher Columbus","Ferdinand Magellan","Leif Erikson"], answer: 1 },
+
+        // +10 realistic additions
+        { q: "Which ancient civilization created the Colosseum?", options: ["Greek","Roman","Egyptian","Persian"], answer: 1 },
+  { q: "George Washington was the first President of the United States.", options: ["True","False"], answer: 1 },
+  { q: "World War I started in 1914.", options: ["True","False"], answer: 1 },
+  { q: "The Roman Empire fell in 476 AD.", options: ["True","False"], answer: 1 },
+  { q: "The Pyramids are located in Greece.", options: ["True","False"], answer: 0 },
+  { q: "India gained independence in 1947.", options: ["True","False"], answer: 1 },
+  { q: "Napoleon Bonaparte was exiled to Elba.", options: ["True","False"], answer: 1 },
+  { q: "The Titanic sank in 1912.", options: ["True","False"], answer: 1 },
+        { q: "What ancient wonder was located in the city of Babylon?", options: ["Colossus of Rhodes","Hanging Gardens","Great Pyramid","Lighthouse of Alexandria"], answer: 1 },
+        { q: "Which revolution overthrew the Russian monarchy in 1917?", options: ["French Revolution","Bolshevik Revolution","Industrial Revolution","Chinese Revolution"], answer: 1 }
+
+
+
+      ],
+      "medium": [
+        { q: "Which event sparked the start of World War I?", options: ["Assassination of Archduke Franz Ferdinand","Invasion of Poland","Zimmermann Telegram","Battle of the Somme"], answer: 0 },
+        { q: "Who was the British Prime Minister during WWII?", options: ["Neville Chamberlain","Winston Churchill","Clement Attlee","Stanley Baldwin"], answer: 1 },
+        { q: "The Bolshevik Revolution took place in which year?", options: ["1905","1917","1922","1939"], answer: 1 },
+        { q: "Which empire was ruled by Genghis Khan?", options: ["Roman Empire","Mongol Empire","Ottoman Empire","Persian Empire"], answer: 1 },
+        { q: "The Treaty of Versailles officially ended which war?", options: ["World War I","World War II","Crimean War","Napoleonic Wars"], answer: 0 },
+
+        // +10 realistic additions
+        { q: "Which dynasty built much of the modern Great Wall in China?", options: ["Ming","Qing","Han","Tang"], answer: 0 },
+  { q: "Mahatma Gandhi led the Salt March in 1930.", options: ["True","False"], answer: 1 },
+  { q: "Julius Caesar was assassinated in 44 BC.", options: ["True","False"], answer: 1 },
+  { q: "The Renaissance began in France.", options: ["True","False"], answer: 0 },
+  { q: "The Magna Carta was signed in 1215.", options: ["True","False"], answer: 1 },
+  { q: "The Black Death occurred in the 18th century.", options: ["True","False"], answer: 0 },
+  { q: "The Wright brothers invented the first airplane.", options: ["True","False"], answer: 1 },
+  { q: "The Ottoman Empire ended after World War I.", options: ["True","False"], answer: 1 },
+        { q: "Which English monarch established the Church of England?", options: ["Henry VII","Henry VIII","Elizabeth I","Mary I"], answer: 1 },
+        { q: "Which conference in 1945 established the United Nations?", options: ["Yalta Conference","Tehran Conference","Potsdam Conference","San Francisco Conference"], answer: 3 }
+
+
+
+      ],
+      "hard": [
+        { q: "Which ancient city-state was ruled by a council known as the Gerousia?", options: ["Athens","Sparta","Thebes","Corinth"], answer: 1 },
+        { q: "The Edict of Milan (313 AD) granted religious tolerance to which religion in the Roman Empire?", options: ["Judaism","Christianity","Islam","Paganism"], answer: 1 },
+        { q: "Who was the longest-reigning Pharaoh of ancient Egypt?", options: ["Tutankhamun","Ramses II","Cleopatra VII","Akhenaten"], answer: 1 },
+        { q: "Which English king signed the Magna Carta in 1215?", options: ["Henry II","John","Richard I","Edward I"], answer: 1 },
+        { q: "The Battle of Hastings occurred in which year?", options: ["1066","1215","1415","1588"], answer: 0 },
+
+        // +10 realistic additions
+        { q: "Which 16th-century English monarch established Protestantism in England?", options: ["Mary I","Elizabeth I","Henry VIII","Edward VI"], answer: 2 },
+  { q: "The Edict of Nantes granted religious freedom in Spain.", options: ["True","False"], answer: 0 },
+  { q: "The Code of Hammurabi is the oldest known legal code.", options: ["True","False"], answer: 1 },
+  { q: "The Russian Revolution happened in 1917.", options: ["True","False"], answer: 1 },
+  { q: "Alexander the Great was king of Macedonia.", options: ["True","False"], answer: 1 },
+  { q: "The Hundred Years’ War lasted exactly 100 years.", options: ["True","False"], answer: 0 },
+  { q: "The Industrial Revolution began in the United Kingdom.", options: ["True","False"], answer: 1 },
+  { q: "The Roman Republic preceded the Roman Empire.", options: ["True","False"], answer: 1 },
+        { q: "Which medieval Islamic scholar wrote influential works on medicine, including 'The Canon of Medicine'?", options: ["Ibn Battuta","Ibn Sina (Avicenna)","Al-Farabi","Al-Khwarizmi"], answer: 1 },
+        { q: "Which revolution (late 18th century) directly inspired many modern democratic movements worldwide?", options: ["Russian Revolution","American Revolution","French Revolution","Industrial Revolution"], answer: 2 }
+      ]
+    },
+
+    "Sports": {
+      "easy": [
+        { q: "How many players are on a basketball team on the court per side?", options: ["5","6","7","4"], answer: 0 },
+        { q: "Which sport uses a shuttlecock?", options: ["Tennis","Squash","Badminton","Table Tennis"], answer: 2 },
+        { q: "In soccer, how many goals is a hat-trick?", options: ["1","2","3","4"], answer: 2 },
+        { q: "Which sport is known as the 'king of sports' worldwide?", options: ["Cricket","Basketball","Soccer (Football)","Rugby"], answer: 2 },
+        { q: "How many bases are there on a baseball diamond?", options: ["3","4","5","6"], answer: 1 },
+
+        // +10 realistic additions
+        { q: "How many players are on a cricket team on the field (excluding substitutes)?", options: ["9","10","11","12"], answer: 2 },
+  { q: "Basketball has 5 players on the court for each team.", options: ["True","False"], answer: 1 },
+  { q: "The Olympics are held every 2 years.", options: ["True","False"], answer: 0 },
+  { q: "Tennis matches can be played as singles or doubles.", options: ["True","False"], answer: 1 },
+  { q: "A standard football match lasts 90 minutes.", options: ["True","False"], answer: 1 },
+  { q: "Cricket is played with a bat and ball.", options: ["True","False"], answer: 1 },
+  { q: "The FIFA World Cup is for basketball.", options: ["True","False"], answer: 0 },
+  { q: "A volleyball team has 6 players on the court.", options: ["True","False"], answer: 1 },
+        { q: "Which sport awards points called 'runs' and uses terms like 'over' and 'bowler'?", options: ["Baseball","Cricket","Rugby","Soccer"], answer: 1 }
+
+
+
+      ],
+      "medium": [
+        { q: "Which country hosted the 2016 Summer Olympics?", options: ["China","Brazil","UK","Greece"], answer: 1 },
+        { q: "Who has won the most men's singles Grand Slam tennis titles (as of 2021)?", options: ["Roger Federer","Rafael Nadal","Novak Djokovic","Pete Sampras"], answer: 2 },
+        { q: "In cricket, what term describes a bowler taking three wickets in three consecutive deliveries?", options: ["Hat-trick","Triple","Double","Sweep"], answer: 0 },
+        { q: "Which team won the FIFA World Cup in 2014?", options: ["Brazil","Germany","Argentina","Spain"], answer: 1 },
+        { q: "How many minutes is a standard professional soccer match (excluding added time)?", options: ["60","90","120","45"], answer: 1 },
+
+        // +10 realistic additions
+        { q: "Which country hosted the FIFA World Cup in 2018?", options: ["Russia","Qatar","Brazil","Germany"], answer: 0 },
+  { q: "Roger Federer is a famous tennis player.", options: ["True","False"], answer: 1 },
+  { q: "Cricket originated in Australia.", options: ["True","False"], answer: 0 },
+  { q: "A rugby team has 15 players on the field.", options: ["True","False"], answer: 1 },
+  { q: "The Stanley Cup is awarded in ice hockey.", options: ["True","False"], answer: 1 },
+  { q: "Usain Bolt is known for swimming.", options: ["True","False"], answer: 0 },
+  { q: "The Super Bowl is an NFL championship game.", options: ["True","False"], answer: 1 },
+  { q: "Baseball is played with a round bat.", options: ["True","False"], answer: 0 },
+        { q: "Which athlete holds the men's 100m world record (as of 2021)?", options: ["Usain Bolt","Justin Gatlin","Yohan Blake","Tyson Gay"], answer: 0 },
+        { q: "Which baseball player broke the 'single-season home run' record in 2001 (controversial)?", options: ["Mark McGwire","Sammy Sosa","Barry Bonds","Alex Rodriguez"], answer: 1 }
+
+
+      ],
+      "hard": [
+        { q: "Who is the all-time leading scorer in NBA history (regular season) as of 2023?", options: ["LeBron James","Kareem Abdul-Jabbar","Karl Malone","Michael Jordan"], answer: 0 },
+        { q: "Which country won the first FIFA World Cup in 1930?", options: ["Brazil","Uruguay","Argentina","Italy"], answer: 1 },
+        { q: "In tennis, what is the minimum number of games needed to win a standard set without a tiebreak?", options: ["6","7","8","5"], answer: 0 },
+        { q: "Which cyclist has the most Tour de France wins (official) as of 2023?", options: ["Eddy Merckx","Bernard Hinault","Miguel Induráin","Lance Armstrong"], answer: 2 },
+        { q: "In Formula 1, how many points did the race winner obtain under the 2010–2019 scoring system for a victory?", options: ["10","25","15","20"], answer: 1 },
+
+        // +10 realistic additions
+        { q: "Which cricketer scored the first-ever quadruple century in Test cricket?", options: ["Brian Lara","Don Bradman","Chris Gayle","Mahela Jayawardene"], answer: 0 },
+        { q: "Which country hosted the 1956 Summer Olympics equestrian events separately in Stockholm due to quarantine laws?", options: ["Australia","Sweden","UK","USA"], answer: 1 },
+        { q: "Which Formula 1 driver has the most World Championships as of 2021?", options: ["Ayrton Senna","Michael Schumacher","Lewis Hamilton","Sebastian Vettel"], answer: 1 },
+        { q: "Which team won the NBA championship in 1996 and set the then-best regular-season record?", options: ["Chicago Bulls","Los Angeles Lakers","San Antonio Spurs","Houston Rockets"], answer: 0 },
+  { q: "The Olympic flame was first introduced in 1936.", options: ["True","False"], answer: 1 },
+  { q: "The Ashes series is a cricket contest between India and Australia.", options: ["True","False"], answer: 0 },
+  { q: "The maximum score in a single frame of snooker is 147.", options: ["True","False"], answer: 1 },
+  { q: "Basketball was invented in Canada.", options: ["True","False"], answer: 0 },
+  { q: "The Davis Cup is related to tennis.", options: ["True","False"], answer: 1 },
+  { q: "Formula 1 races are held exclusively in Europe.", options: ["True","False"], answer: 0 },
+  { q: "Mia Hamm is famous for playing football (soccer).", options: ["True","False"], answer: 1 },
+      ]
+    }
+  };
+
+  // ---------------------------------
+  // Helper: return N random questions
+  // ---------------------------------
+  function getRandomQuestions(arr, num = 5) {
+    if (!Array.isArray(arr)) return [];
+    // copy then perform Fisher-Yates shuffle for better randomness
+    const a = arr.slice();
+    for (let i = a.length - 1; i > 0; i--) {
+      const j = Math.floor(Math.random() * (i + 1));
+      [a[i], a[j]] = [a[j], a[i]];
+    }
+    return a.slice(0, Math.min(num, a.length));
+  }
+
+  // -------------------------
+  // --- existing runtime ----
+  // -------------------------
+  let currentCategory = null;
+  let currentDifficulty = null;
+  let currentIndex = 0;
+  let userAnswers = [];
+  let currentSet = [];
+  let isQuickPlay = false;
+  let quickPlayTimerInterval = null;
+  let quickPlayStartTime = null;
+  let lastMode = null;
+
+    // Wire discover category clicks
+    document.getElementById('cat-movies').addEventListener('click', ()=> openDifficulty('Movies'));
+    document.getElementById('cat-science').addEventListener('click', ()=> openDifficulty('Science'));
+    document.getElementById('cat-history').addEventListener('click', ()=> openDifficulty('History'));
+    document.getElementById('cat-sports').addEventListener('click', ()=> openDifficulty('Sports'));
+
+    function openDifficulty(category) {
+      currentCategory = category;
+      document.getElementById('diffTitle').textContent = `Choose Difficulty — ${category}`;
+      document.getElementById('diffSubtitle').textContent = `Start a 5-question ${category} quiz`;
+      showPage('difficultyPage');
+    }
+
+    document.getElementById('backToDiscoverFromDiff').addEventListener('click', ()=> {
+      showPage('discoverPage');
+      currentCategory = null;
+    });
+
+    // Difficulty buttons (Discover)
+    document.getElementById('diff-easy').addEventListener('click', ()=> startQuiz('easy'));
+    document.getElementById('diff-medium').addEventListener('click', ()=> startQuiz('medium'));
+    document.getElementById('diff-hard').addEventListener('click', ()=> startQuiz('hard'));
+
+    function startQuiz(diff) {
+      currentDifficulty = diff;
+      const bank = data[currentCategory];
+      if(!bank || !bank[diff]) {
+        alert("No questions found for this category/difficulty.");
+        return;
+      }
+
+
+    // <-- pick 5 random questions from the selected difficulty bank
+    currentSet = getRandomQuestions(bank[diff], 5);
+    currentIndex = 0;
+    userAnswers = Array(currentSet.length).fill(null);
+    isQuickPlay = false;
+    lastMode = 'discover';
+    document.getElementById('quizHeader').textContent = `${currentCategory} — ${capitalizeFirst(diff)}`;
+    document.getElementById('topStats').style.display = 'none';
+    showPage('quizPage');
+    renderQuestion(true);
+    updateProgress();
+  }
+
+  // OPEN Quick Play discover-like card
+  const qpDiscoverOverlay = document.getElementById('qpDiscoverOverlay');
+  const quickPlayBtn = document.getElementById('quickPlayBtn');
+  quickPlayBtn.addEventListener('click', ()=> {
+    qpDiscoverOverlay.classList.add('active');
+  });
+  document.getElementById('qpDiscoverBack').addEventListener('click', ()=> {
+    qpDiscoverOverlay.classList.remove('active');
+  });
+
+    // clicking the 4 cards in qpDiscover starts quickplay (with countdown)
+    document.getElementById('qpDiscover-movies').addEventListener('click', ()=> prepareQuickPlayStart('Movies'));
+    document.getElementById('qpDiscover-science').addEventListener('click', ()=> prepareQuickPlayStart('Science'));
+    document.getElementById('qpDiscover-history').addEventListener('click', ()=> prepareQuickPlayStart('History'));
+    document.getElementById('qpDiscover-sports').addEventListener('click', ()=> prepareQuickPlayStart('Sports'));
+
+    function prepareQuickPlayStart(clickedCategory) {
+      // store clicked category if you want to record it (not used further)
+      // get selected difficulty from dropdown
+      const sel = document.getElementById('qpDifficultySelect').value;
+      // show countdown (3-2-1-Go) then start quick play
+      playCountdown(()=> startQuickPlayAfterCountdown(sel));
+    }
+
+    // Countdown: shows 3,2,1,Go then callback
+    const countdownOverlay = document.getElementById('countdownOverlay');
+    const countdownNumber = document.getElementById('countdownNumber');
+    function playCountdown(callback) {
+      countdownOverlay.classList.add('active');
+      const sequence = ['3','2','1','Go!'];
+      let idx = 0;
+      function showNext(){
+        countdownNumber.textContent = sequence[idx];
+        countdownNumber.classList.remove('show');
+        // force reflow for restart
+        void countdownNumber.offsetWidth;
+        countdownNumber.classList.add('show');
+        idx++;
+        if(idx < sequence.length){
+          setTimeout(showNext, 900);
+        } else {
+          setTimeout(()=> {
+            countdownNumber.classList.remove('show');
+            countdownOverlay.classList.remove('active');
+            callback && callback();
+          }, 700);
+        }
+      }
+      showNext();
+    }
+
+
+  // Start quick play — after countdown
+  function startQuickPlayAfterCountdown(selValue){
+    const diffSel = selValue || 'mixed';
+    currentDifficulty = diffSel;
+    // Build pool: pick one question from each category, difficulty logic:
+    const categories = ["Movies","Science","History","Sports"];
+    const pool = [];
+    categories.forEach(cat => {
+      let pickDiff = diffSel;
+      if(diffSel === 'mixed') {
+        // choose random difficulty for this category
+        const diffs = ['easy','medium','hard'];
+        pickDiff = diffs[Math.floor(Math.random()*diffs.length)];
+      }
+      const bank = data[cat] && data[cat][pickDiff] ? data[cat][pickDiff] : [];
+      if(bank.length > 0){
+        const idx = Math.floor(Math.random()*bank.length);
+        pool.push(Object.assign({}, bank[idx]));
+      }
+    });
+
+    // shuffle pool and pick 5 random questions (from the pool)
+    currentSet = getRandomQuestions(pool, 5);
+    // if less than 5 fill from any available (fallback)
+    if(currentSet.length < 5){
+      for(const cat in data){
+        for(const d in data[cat]){
+          for(const q of data[cat][d]){
+            if(currentSet.length >= 5) break;
+            if(!currentSet.includes(q)) currentSet.push(Object.assign({}, q));
+          }
+          if(currentSet.length >= 5) break;
+        }
+        if(currentSet.length >= 5) break;
+      }
+      // ensure uniqueness by shuffling once more
+      currentSet = getRandomQuestions(currentSet, 5);
+    }
+    currentIndex = 0;
+    userAnswers = Array(currentSet.length).fill(null);
+    isQuickPlay = true;
+    lastMode = 'quickplay';
+    document.getElementById('quizHeader').textContent = `Quick Play — ${capitalizeFirst(diffSel==='mixed'?'mixed':diffSel)}`;
+    document.getElementById('topStats').style.display = 'block';
+    updateScoreDisplay();
+    resetTimer();
+    startTimer();
+    qpDiscoverOverlay.classList.remove('active');
+    showPage('quizPage');
+    renderQuestion(true);
+    updateProgress();
+  }
+
+  // -------------------
+  // Utility & runtime
+  // -------------------
+  function shuffleArray(arr){
+    for(let i=arr.length-1;i>0;i--){
+      const j = Math.floor(Math.random()*(i+1));
+      [arr[i],arr[j]] = [arr[j],arr[i]];
+    }
+  }
+
+  // Timer functions
+  function startTimer(){
+    quickPlayStartTime = Date.now();
+    if(quickPlayTimerInterval) clearInterval(quickPlayTimerInterval);
+    quickPlayTimerInterval = setInterval(()=> {
+      const elapsed = Date.now() - quickPlayStartTime;
+      document.getElementById('timerDisplay').textContent = formatMs(elapsed);
+    }, 250);
+  }
+  function stopTimer(){
+    if(quickPlayTimerInterval) { clearInterval(quickPlayTimerInterval); quickPlayTimerInterval = null; }
+  }
+  function resetTimer(){
+    stopTimer();
+    quickPlayStartTime = null;
+    document.getElementById('timerDisplay').textContent = '00:00';
+  }
+  function formatMs(ms){
+    const totalSec = Math.floor(ms/1000);
+    const mm = Math.floor(totalSec/60).toString().padStart(2,'0');
+    const ss = (totalSec%60).toString().padStart(2,'0');
+    return `${mm}:${ss}`;
+  }
+
+  function capitalizeFirst(s){ return s.charAt(0).toUpperCase()+s.slice(1); }
+
+    // Render question
+    const questionContent = document.getElementById('questionContent');
+    function renderQuestion(initial=false){
+      const qObj = currentSet[currentIndex];
+      document.getElementById('qIndex').textContent = `${currentIndex+1}`;
+      const newNode = document.createElement('div');
+      newNode.className = 'q-enter q-enter-active';
+      let html = `<h4 class="text-lg font-bold">${escapeHtml(qObj.q)}</h4>`;
+      html += `<div class="options">`;
+      qObj.options.forEach((opt, idx) => {
+        const rid = `opt_${currentIndex}_${idx}`;
+        const checked = userAnswers[currentIndex] === idx ? 'checked' : '';
+        html += `<label class="option-label" for="${rid}"><input type="radio" name="qopts" id="${rid}" value="${idx}" ${checked} /> <span>${escapeHtml(opt)}</span></label>`;
+      });
+      html += `</div>`;
+      newNode.innerHTML = html;
+
+      if (!initial && questionContent.firstChild) {
+        const old = questionContent.firstChild;
+        old.classList.add('q-exit-active');
+        old.style.transition = 'all 250ms ease';
+        old.style.transform = 'translateX(-20px)';
+        old.style.opacity = '0';
+        setTimeout(()=> {
+          questionContent.removeChild(old);
+          questionContent.appendChild(newNode);
+          hookOptionListeners();
+        }, 260);
+      } else {
+        questionContent.innerHTML = '';
+        questionContent.appendChild(newNode);
+        hookOptionListeners();
+      }
+
+      document.getElementById('btnBackQ').disabled = currentIndex === 0;
+      document.getElementById('btnNextQ').textContent = (currentIndex === currentSet.length - 1) ? 'Finish' : 'Next';
+      updateProgress();
+      updateScoreDisplay();
+    }
+
+
+
+function hookOptionListeners(){
+  const radios = questionContent.querySelectorAll('.option-label input[type="radio"]');
+  const labels = questionContent.querySelectorAll('.option-label');
+
+
+
+  radios.forEach(radio => {
+    radio.addEventListener('change', (e)=>{
+      const selected = parseInt(e.target.value, 10);
+      const correct = currentSet[currentIndex].answer;
+      userAnswers[currentIndex] = selected;
+
+      // Disable all options (lock the answer)
+      radios.forEach(r => r.disabled = true);
+
+      // Apply colors (50% opacity)
+      labels.forEach((lbl, idx) => {
+        if (idx === selected) {
+          if (idx === correct) {
+            lbl.style.backgroundColor = "rgba(0, 255, 0, 0.5)"; // ✅ correct: green
+          } else {
+            lbl.style.backgroundColor = "rgba(255, 0, 0, 0.5)"; // ❌ wrong: red
+          }
+        }
+      });
+
+      updateScoreDisplay();
+    });
+  });
+}
+
+
+    function escapeHtml(text) {
+      return text.replace(/[&<>"']/g, function(m){ return {'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[m]; });
+    }
+
+    document.getElementById('btnNextQ').addEventListener('click', ()=> {
+if(currentIndex === currentSet.length - 1) {
+  const score = computeScore();
+  document.getElementById('summaryScore').textContent = `You scored ${score}/${currentSet.length}`;
+  
+  let timeTakenMs = null;
+  if(isQuickPlay) {
+    stopTimer();
+    if (quickPlayStartTime) timeTakenMs = Date.now() - quickPlayStartTime;
+  }
+
+  // 🎯 Track achievements progress
+  markQuizCompleted(score, currentCategory || "QuickPlay", timeTakenMs, isQuickPlay);
+
+  showPage('summaryPage');
+}
+else {
+        currentIndex++;
+        renderQuestion();
+      }
+    });
+  document.getElementById('btnBackQ').addEventListener('click', ()=> {
+    if(currentIndex > 0) {
+      currentIndex--;
+      renderQuestion();
+    }
+  });
+
+  // Quit and jumps
+  document.getElementById('quitQuizBtn').addEventListener('click', ()=> {
+    if(confirm("Quit this quiz and return to Discover Categories? Your progress will be lost.")) {
+      if(isQuickPlay) {
+        stopTimer();
+        isQuickPlay = false;
+        lastMode = null;
+        document.getElementById('topStats').style.display = 'none';
+        resetTimer();
+      }
+      showPage('discoverPage');
+    }
+  });
+  document.getElementById('jumpToDiscover').addEventListener('click', ()=> {
+    if(isQuickPlay){
+      stopTimer();
+      isQuickPlay = false;
+      document.getElementById('topStats').style.display = 'none';
+      resetTimer();
+    }
+    showPage('discoverPage');
+  });
+
+  function updateProgress(){
+    if(!currentSet || currentSet.length === 0) {
+      document.getElementById('progressInner').style.width = `0%`;
+      return;
+    }
+    document.getElementById('progressInner').style.width = `${(currentIndex+1)/currentSet.length*100}%`;
+  }
+
+  function computeScore(){
+    let s = 0;
+    for(let i=0;i<currentSet.length;i++){
+      const correct = typeof currentSet[i].answer !== 'undefined' ? currentSet[i].answer : null;
+      if(userAnswers[i] === correct) s++;
+    }
+    return s;
+  }
+
+  function updateScoreDisplay(){
+    const s = computeScore();
+    const sd = document.getElementById('scoreDisplay');
+    if(sd) sd.textContent = `Score: ${s}`;
+  }
+
+  // Try again
+  document.getElementById('tryAgainBtn').addEventListener('click', ()=> {
+    if(lastMode === 'quickplay'){
+      qpDiscoverOverlay.classList.add('active');
+    } else if(lastMode === 'discover' && currentCategory && currentDifficulty) {
+      startQuiz(currentDifficulty);
+    } else {
+      showPage('discoverPage');
+    }
+  });
+
+  document.getElementById('backToDiscoverFromSummary').addEventListener('click', ()=> {
+    if(lastMode === 'quickplay') {
+      isQuickPlay = false;
+      stopTimer();
+      resetTimer();
+      document.getElementById('topStats').style.display = 'none';
+      lastMode = null;
+      showPage('homePage');
+    } else {
+      currentCategory = null;
+      currentDifficulty = null;
+      showPage('discoverPage');
+    }
+  });
+
+  // keyboard nav
+  document.addEventListener('keydown', (e)=>{
+    if(document.getElementById('quizPage').classList.contains('active')){
+      if(e.key === 'ArrowRight' || e.key === 'Enter'){
+        document.getElementById('btnNextQ').click();
+      } else if(e.key === 'ArrowLeft'){
+        document.getElementById('btnBackQ').click();
+      }
+    }
+  });
+
+  // initial page (preserve your original initial call)
+  showPage('signinPage');
+
+
+<!-- JS of Join room -->
+const joinBtn = document.getElementById('joinRoomBtn');
+  const joinOverlay = document.getElementById('joinRoomOverlay');
+  const backToMenu = document.getElementById('backToMenu');
+  const confirmJoin = document.getElementById('confirmJoin');
+  const roomCodeInput = document.getElementById('roomCodeInput');
+  const mainMenu = document.getElementById('mainMenu');
+  const lobby = document.getElementById('multiplayerLobby');
+  const returnToMenu = document.getElementById('returnToMenu');
+
+  joinBtn.addEventListener('click', () => {
+    joinOverlay.style.display = 'flex';
+    mainMenu.classList.add('hidden');
+  });
+
+  backToMenu.addEventListener('click', () => {
+    joinOverlay.style.display = 'none';
+    mainMenu.classList.remove('hidden');
+  });
+
+  confirmJoin.addEventListener('click', () => {
+    const code = roomCodeInput.value.trim();
+    if (code === "") {
+      alert("Please enter a valid room code!");
+      return;
+    }
+    joinOverlay.style.display = 'none';
+    lobby.classList.remove('hidden');
+  });
+
+  returnToMenu.addEventListener('click', () => {
+    lobby.classList.add('hidden');
+    mainMenu.classList.remove('hidden');
+  });
+
+
+// 🔹 Username Setup
+// ========================
+let currentUser = localStorage.getItem("quizUsername");
+
+if (!currentUser) {
+  currentUser = prompt("Enter your username:");
+  if (currentUser && currentUser.trim() !== "") {
+    localStorage.setItem("quizUsername", currentUser.trim());
+  } else {
+    currentUser = "Guest";
+    localStorage.setItem("quizUsername", currentUser);
+  }
+}
+console.log("Welcome,", currentUser);
+
+// ===================== 🌍 LOCAL LEADERBOARD SYSTEM =====================
+
+// Retrieve leaderboard from localStorage or initialize empty
+let leaderboard = JSON.parse(localStorage.getItem("leaderboard")) || [];
+
+// Get player name (persistent)
+let playerName = localStorage.getItem("playerName");
+if (!playerName) {
+  playerName = prompt("Enter your player name:");
+  localStorage.setItem("playerName", playerName || "Player");
+}
+
+// Save leaderboard to localStorage
+function saveLeaderboard() {
+  localStorage.setItem("leaderboard", JSON.stringify(leaderboard));
+}
+
+// Update leaderboard with current total score
+function updateLeaderboard(playerName, totalScore) {
+  const existing = leaderboard.find(entry => entry.name === playerName);
+  if (existing) {
+    existing.score = Math.max(existing.score, totalScore); // keep highest score
+  } else {
+    leaderboard.push({ name: playerName, score: totalScore });
+  }
+
+  leaderboard.sort((a, b) => b.score - a.score);
+  saveLeaderboard();
+}
+
+// Render leaderboard on screen
+function renderLeaderboard() {
+  const list = document.getElementById("leaderboardList");
+  if (!list) return;
+
+  // If leaderboard data not found, show sample demo players
+  if (!leaderboard || leaderboard.length === 0) {
+    list.innerHTML = `
+      <div class="leaderboard-item gold">
+        <span>🥇 1. Arjun Mehta</span>
+        <span>125 pts</span>
+      </div>
+      <div class="leaderboard-item silver">
+        <span>🥈 2. Priya Sharma</span>
+        <span>110 pts</span>
+      </div>
+      <div class="leaderboard-item bronze">
+        <span>🥉 3. Rohan Das</span>
+        <span>98 pts</span>
+      </div>
+      <div class="leaderboard-item">
+        <span>4. Sneha Patel</span>
+        <span>85 pts</span>
+      </div>
+      <div class="leaderboard-item">
+        <span>5. Karan Verma</span>
+        <span>72 pts</span>
+      </div>
+    `;
+    return;
+  }
+
+  // Otherwise, show actual stored leaderboard
+  leaderboard.sort((a, b) => b.score - a.score);
+  list.innerHTML = leaderboard
+    .map((p, i) => {
+      let medalClass = "";
+      let medalEmoji = "";
+      if (i === 0) { medalClass = "gold"; medalEmoji = "🥇"; }
+      else if (i === 1) { medalClass = "silver"; medalEmoji = "🥈"; }
+      else if (i === 2) { medalClass = "bronze"; medalEmoji = "🥉"; }
+
+      return `
+        <div class="leaderboard-item ${medalClass}">
+          <span>${medalEmoji} ${i + 1}. ${p.name}</span>
+          <span>${p.score} pts</span>
+        </div>`;
+    })
+    .join("");
+}
+
+
+// Reset leaderboard (for testing or clearing)
+function resetLeaderboard() {
+  if (confirm("Are you sure you want to reset the leaderboard?")) {
+    leaderboard = [];
+    saveLeaderboard();
+    renderLeaderboard();
+  }
+}
+
+// ===================== END LEADERBOARD SYSTEM =====================
+
+
+// === BACKGROUND MUSIC & SETTINGS ===
+const bgMusic = document.getElementById("bgMusic");
+const settingsBtn = document.getElementById("settingsBtn");
+const settingsPanel = document.getElementById("settingsPanel");
+const volumeControl = document.getElementById("volumeControl");
+const muteBtn = document.getElementById("muteBtn");
+
+let isMuted = false;
+
+// Toggle pop-down settings
+settingsBtn.addEventListener("click", () => {
+  settingsPanel.classList.toggle("hidden");
+});
+
+// Volume control
+volumeControl.addEventListener("input", () => {
+  bgMusic.volume = volumeControl.value;
+});
+
+// Mute/Unmute
+muteBtn.addEventListener("click", () => {
+  isMuted = !isMuted;
+  bgMusic.muted = isMuted;
+  muteBtn.textContent = isMuted ? "🔊 Unmute" : "🔇 Mute";
+});
+
+// === Play Music After Login or Guest ===
+function startBackgroundMusic() {
+  bgMusic.play().catch(() => {
+    console.warn("Autoplay blocked — music will start when user interacts.");
+  });
+}
+
+// Attach to your login/guest buttons (use your actual button IDs)
+document.addEventListener("DOMContentLoaded", () => {
+  const guestBtn = document.getElementById("guestBtn");
+  const loginBtn = document.getElementById("loginBtn");
+
+  if (guestBtn) guestBtn.addEventListener("click", startBackgroundMusic);
+  if (loginBtn) loginBtn.addEventListener("click", startBackgroundMusic);
+});
+
+/* Profile module — robust handlers (use exactly once) */
+(function(){
+  // Wait until DOM loaded (script placement near end reduces risk but we keep safety)
+  function initProfile() {
+    const btn = document.getElementById('profileBtn');
+    const panel = document.getElementById('profilePanel');
+    const closeBtn = document.getElementById('closeProfileBtn');
+    const saveBtn = document.getElementById('saveProfileBtn');
+    const form = document.getElementById('profileForm');
+    const fileInput = document.getElementById('profilePicInput');
+    const avatarPreview = document.getElementById('avatarPreview');
+    const profilePhoto = document.getElementById('profilePhoto');
+    const profileIcon = document.getElementById('profileIcon');
+
+    // fields
+    const nameEl = document.getElementById('profileName');
+    const userEl = document.getElementById('profileUsername');
+    const emailEl = document.getElementById('profileEmail');
+    const ageEl = document.getElementById('profileAge');
+
+    if(!btn || !panel || !form){
+      console.warn('Profile: required elements not found', {btn, panel, form});
+      return;
+    }
+
+    // helper: load and apply profile
+    function loadProfile(){
+      try {
+        const raw = localStorage.getItem('quizArenaProfile');
+        if(!raw) return;
+        const data = JSON.parse(raw);
+        nameEl.value = data.name || '';
+        userEl.value = data.username || '';
+        emailEl.value = data.email || '';
+        ageEl.value = data.age || '';
+        if(data.avatar){
+          avatarPreview.src = data.avatar;
+          avatarPreview.style.display = 'block';
+          profilePhoto.src = data.avatar;
+          profilePhoto.style.display = 'block';
+          if(profileIcon) profileIcon.style.display = 'none';
+        } else {
+          avatarPreview.style.display = 'none';
+          profilePhoto.style.display = 'none';
+          if(profileIcon) profileIcon.style.display = 'inline';
+        }
+      } catch(e){ console.error('Profile load error', e); }
+    }
+
+    // helper: save profile (optionally include base64 image string)
+    function saveProfile(base64Image){
+      const data = {
+        name: nameEl.value.trim(),
+        username: userEl.value.trim(),
+        email: emailEl.value.trim(),
+        age: ageEl.value.trim(),
+        avatar: base64Image || (JSON.parse(localStorage.getItem('quizArenaProfile') || '{}').avatar || '')
+      };
+      localStorage.setItem('quizArenaProfile', JSON.stringify(data));
+      // feedback
+      saveBtn.textContent = 'Saved ✓';
+      setTimeout(()=> saveBtn.textContent = 'Save', 900);
+      // apply to button
+      if(data.avatar){
+        profilePhoto.src = data.avatar;
+        profilePhoto.style.display = 'block';
+        if(profileIcon) profileIcon.style.display = 'none';
+      }
+    }
+
+function openPanel(){
+  loadProfile();
+  panel.classList.add('open');
+  panel.setAttribute('aria-hidden','false');
+  document.body.style.overflow = 'hidden';
+  btn.classList.add('hidden'); // 👈 hides profile button
+}
+
+function closePanel(){
+  panel.classList.remove('open');
+  panel.setAttribute('aria-hidden','true');
+  document.body.style.overflow = '';
+  setTimeout(() => btn.classList.remove('hidden'), 300); // 👈 show again after panel closes
+}
+
+
+    // events
+    btn.addEventListener('click', (e)=>{
+      e.stopPropagation();
+      if(panel.classList.contains('open')) closePanel();
+      else openPanel();
+    });
+
+    if(closeBtn){
+      closeBtn.addEventListener('click', (e)=> { e.stopPropagation(); closePanel(); });
+    } else {
+      // fallback: the in-panel Close button may be the one with id closeProfileBtn; our HTML uses that id; above grabbed it.
+    }
+
+    // also close when clicking the "Close" type button (we used closeProfileBtn id)
+    const inPanelClose = document.getElementById('closeProfileBtn');
+    if(inPanelClose) inPanelClose.addEventListener('click', (e)=> { e.stopPropagation(); closePanel(); });
+
+    // Escape key closes
+    document.addEventListener('keydown', (ev)=>{
+      if(ev.key === 'Escape' && panel.classList.contains('open')) closePanel();
+    });
+
+    // click outside to close
+    document.addEventListener('click', (ev)=>{
+      if(!panel.classList.contains('open')) return;
+      // if click target is inside panel or button => do nothing
+      if(panel.contains(ev.target) || btn.contains(ev.target)) return;
+      closePanel();
+    });
+
+    // file upload -> base64 conversion
+    let pendingBase64 = null;
+    fileInput.addEventListener('change', (ev)=>{
+      const f = ev.target.files && ev.target.files[0];
+      if(!f) return;
+      if(!f.type.startsWith('image/')) {
+        alert('Please choose an image file.');
+        return;
+      }
+      const reader = new FileReader();
+      reader.onload = function(e){
+        pendingBase64 = e.target.result;
+        avatarPreview.src = pendingBase64;
+        avatarPreview.style.display = 'block';
+      };
+      reader.readAsDataURL(f);
+    });
+
+    // save handler
+    form.addEventListener('submit', (ev)=>{
+      ev.preventDefault();
+      saveProfile(pendingBase64);
+      pendingBase64 = null;
+      closePanel();
+    });
+
+    // Initialize UI from storage right away
+    loadProfile();
+  }
+
+  if(document.readyState === 'loading'){
+    document.addEventListener('DOMContentLoaded', initProfile);
+  } else {
+    initProfile();
+  }
+})();
+
+
+
+// ===================== 🏆 ACHIEVEMENTS SYSTEM =====================
+
+// Load or initialize achievement data
+let achievements = JSON.parse(localStorage.getItem("achievements")) || {
+  quizStarter: false,
+  tenSolver: false,
+  pointHunter: false,
+  flawlessVictor: false,
+  speedRunner: false,
+  categoryMaster: false
+};
+
+// Track progress stats
+let totalQuizzesCompleted = parseInt(localStorage.getItem("totalQuizzesCompleted") || "0");
+let totalScore = parseInt(localStorage.getItem("totalScore") || "0");
+let categoriesCompleted = JSON.parse(localStorage.getItem("categoriesCompleted") || "[]");
+
+// Update UI based on achievement status
+function renderAchievementsUI() {
+  document.querySelectorAll('.achievement-card').forEach(card => {
+    const id = card.dataset.id;
+    const status = card.querySelector('.ach-status');
+    if (achievements[id]) {
+      card.style.background = "linear-gradient(135deg, #2ecc71, #27ae60)";
+      status.textContent = "Unlocked 🎉";
+      status.style.color = "#fff";
+      card.style.color = "#fff";
+    } else {
+      card.style.background = "rgba(255,255,255,0.06)";
+      status.textContent = "Locked";
+      status.style.color = "#9aa8c9";
+    }
+  });
+}
+
+// Unlock helper
+function unlockAchievement(id) {
+  if (!achievements[id]) {
+    achievements[id] = true;
+    localStorage.setItem("achievements", JSON.stringify(achievements));
+    renderAchievementsUI();
+    alert(`🎉 Achievement Unlocked: ${id.replace(/([A-Z])/g, " $1")}`);
+  }
+}
+
+// Track and update achievements after a quiz
+function markQuizCompleted(score, category, timeTakenMs = null, isQuickPlay = false) {
+  totalQuizzesCompleted++;
+  totalScore += score;
+  if (!categoriesCompleted.includes(category)) categoriesCompleted.push(category);
+
+  // Save progress
+  localStorage.setItem("totalQuizzesCompleted", totalQuizzesCompleted);
+  localStorage.setItem("totalScore", totalScore);
+  localStorage.setItem("categoriesCompleted", JSON.stringify(categoriesCompleted));
+
+  // Check unlock conditions
+  if (totalQuizzesCompleted >= 1) unlockAchievement("quizStarter");
+  if (totalQuizzesCompleted >= 10) unlockAchievement("tenSolver");
+  if (totalScore >= 20) unlockAchievement("pointHunter");
+  if (score === 5) unlockAchievement("flawlessVictor");
+  if (isQuickPlay && timeTakenMs !== null && timeTakenMs < 30000) unlockAchievement("speedRunner");
+  if (["Movies","Science","History","Sports"].every(cat => categoriesCompleted.includes(cat))) unlockAchievement("categoryMaster");
+
+  renderAchievementsUI();
+}
+
+// On achievements page load
+document.getElementById("achievementsPage").addEventListener("click", renderAchievementsUI);
+document.getElementById("backToHomeFromAchievements").addEventListener("click", () => {
+  showPage("homePage");
+});
+
+// Render on first load
+renderAchievementsUI();
+
+// ================= END ACHIEVEMENTS SYSTEM =================
+
+
+// Theme Switch Logic
+const themeSelect = document.getElementById("themeSelect");
+
+function setTheme(theme) {
+  document.body.classList.remove("dark-theme", "light-theme", "midnight-theme");
+  if (theme === "light") document.body.classList.add("light-theme");
+  else if (theme === "midnight") document.body.classList.add("midnight-theme");
+  else document.body.classList.add("dark-theme"); // default
+  localStorage.setItem("theme", theme);
+}
+
+themeSelect.addEventListener("change", e => {
+  setTheme(e.target.value);
+});
+
+// On page load — restore saved theme
+const savedTheme = localStorage.getItem("theme") || "dark";
+themeSelect.value = savedTheme;
+setTheme(savedTheme);
+
+// Optional: adjust emoji brightness for light/dark tones
+function updateEmojiTone(theme) {
+  const emojiBg = document.getElementById("emojiBg");
+  if (!emojiBg) return;
+  emojiBg.style.filter = theme === "light" ? "brightness(1.2)" : "brightness(1)";
+}
+
+// Update tone when user changes theme
+themeSelect.addEventListener("change", e => updateEmojiTone(e.target.value));
+
+// Set tone on initial load
+updateEmojiTone(savedTheme);
+
+
+// MINI GAME LOGIC
+function startMiniGame(type) {
+  showPage('miniGamePage');
+  const title = document.getElementById('miniGameTitle');
+  const container = document.getElementById('miniGameContainer');
+  container.innerHTML = ''; // clear
+
+  if (type === 'memory') {
+    title.textContent = "🧠 Memory Match";
+    container.innerHTML = `
+      <p>Click on two cards to match them!</p>
+      <div id="memoryGrid" class="grid grid-cols-4 gap-2 mt-4"></div>
+    `;
+    const emojis = ['🔥','⚡','🎯','💎','🎮','⭐'];
+    const cards = [...emojis, ...emojis].sort(() => Math.random() - 0.5);
+    const grid = document.getElementById('memoryGrid');
+    let selected = [], matched = [];
+    cards.forEach((emoji, i) => {
+      const card = document.createElement('div');
+      card.className = 'bg-gray-700 rounded-lg text-2xl flex items-center justify-center h-16 cursor-pointer';
+      card.dataset.emoji = emoji;
+      card.onclick = () => {
+        if (selected.length < 2 && !selected.includes(card) && !matched.includes(emoji)) {
+          card.textContent = emoji;
+          selected.push(card);
+          if (selected.length === 2) {
+            setTimeout(() => {
+              if (selected[0].dataset.emoji === selected[1].dataset.emoji) {
+                matched.push(emoji);
+              } else {
+                selected.forEach(c => c.textContent = '');
+              }
+              selected = [];
+              if (matched.length === emojis.length) {
+                container.innerHTML += `<p class="text-green-400 mt-4">🎉 You matched all cards!</p>`;
+              }
+            }, 700);
+          }
+        }
+      };
+      grid.appendChild(card);
+    });
+
+  } else if (type === 'flip') {
+    title.textContent = "🎴 Card Flip Challenge";
+    container.innerHTML = `
+      <p>Guess which card has the star! ✨</p>
+      <div class="grid grid-cols-3 gap-3 mt-4" id="flipGrid"></div>
+    `;
+    const grid = document.getElementById('flipGrid');
+    const star = Math.floor(Math.random() * 3);
+    for (let i = 0; i < 3; i++) {
+      const card = document.createElement('div');
+      card.className = 'bg-gray-700 rounded-lg h-24 flex items-center justify-center cursor-pointer';
+      card.onclick = () => {
+        if (i === star) card.innerHTML = '✨';
+        else card.innerHTML = '❌';
+        setTimeout(() => {
+          container.innerHTML += i === star
+            ? `<p class='text-green-400 mt-3'>🎉 You found the star!</p>`
+            : `<p class='text-red-400 mt-3'>😢 Wrong card!</p>`;
+        }, 400);
+      };
+      grid.appendChild(card);
+    }
+
+  } else if (type === 'guess') {
+    title.textContent = "🔮 Guess the Number";
+    const number = Math.floor(Math.random() * 10) + 1;
+    container.innerHTML = `
+      <p>Guess a number between 1 and 10:</p>
+      <input id="guessInput" type="number" min="1" max="10" class="p-2 text-black rounded mt-2" />
+      <button onclick="checkGuess(${number})" class="menu-btn cyan mt-2">Guess!</button>
+      <div id="guessResult" class="mt-3"></div>
+    `;
+  } else if (type === 'reaction') {
+    title.textContent = "⚡ Reaction Speed";
+    container.innerHTML = `<p>Click when the screen turns <span class='text-green-400'>green</span>!</p><div id='reactionBox' class='bg-red-600 mt-4 h-32 rounded-lg flex items-center justify-center text-xl font-bold cursor-pointer'>WAIT...</div>`;
+    const box = document.getElementById('reactionBox');
+    let start, timeout = setTimeout(() => {
+      box.style.background = 'green';
+      box.textContent = 'CLICK!';
+      start = Date.now();
+    }, 2000 + Math.random() * 3000);
+    box.onclick = () => {
+      if (box.style.background === 'green') {
+        const time = Date.now() - start;
+        box.textContent = `Your reaction: ${time} ms ⚡`;
+        box.style.background = '#16a34a';
+      } else {
+        box.textContent = 'Too early! 😢';
+        box.style.background = '#dc2626';
+        clearTimeout(timeout);
+      }
+    };
+  } else if (type === 'math') {
+    title.textContent = "➗ Quick Math";
+    const a = Math.floor(Math.random() * 10) + 1;
+    const b = Math.floor(Math.random() * 10) + 1;
+    container.innerHTML = `
+      <p>Solve: ${a} × ${b} = ?</p>
+      <input id="mathAnswer" type="number" class="p-2 text-black rounded mt-2" />
+      <button onclick="checkMath(${a*b})" class="menu-btn cyan mt-2">Submit</button>
+      <div id="mathResult" class="mt-3"></div>
+    `;
+  } else if (type === 'rps') {
+    title.textContent = "✊ Rock Paper Scissors";
+    container.innerHTML = `
+      <p>Choose your move!</p>
+      <div class="flex justify-center gap-4 mt-4">
+        <button onclick="playRPS('rock')" class="menu-btn red">✊ Rock</button>
+        <button onclick="playRPS('paper')" class="menu-btn cyan">✋ Paper</button>
+        <button onclick="playRPS('scissors')" class="menu-btn pink">✌️ Scissors</button>
+      </div>
+      <div id="rpsResult" class="mt-4"></div>
+    `;
+  }
+}
+
+function checkGuess(correct) {
+  const guess = Number(document.getElementById('guessInput').value);
+  const result = document.getElementById('guessResult');
+  if (guess === correct) result.innerHTML = "<p class='text-green-400'>🎉 Correct Guess!</p>";
+  else result.innerHTML = `<p class='text-red-400'>❌ Wrong! It was ${correct}</p>`;
+}
+
+function checkMath(correct) {
+  const ans = Number(document.getElementById('mathAnswer').value);
+  const result = document.getElementById('mathResult');
+  if (ans === correct) result.innerHTML = "<p class='text-green-400'>✅ Correct!</p>";
+  else result.innerHTML = `<p class='text-red-400'>❌ Wrong! Correct answer: ${correct}</p>`;
+}
+
+function playRPS(player) {
+  const moves = ['rock','paper','scissors'];
+  const bot = moves[Math.floor(Math.random()*3)];
+  const result = document.getElementById('rpsResult');
+  let text = `You chose ${player}, bot chose ${bot}. `;
+  if (player === bot) text += "It's a draw! 😐";
+  else if (
+    (player==='rock' && bot==='scissors') ||
+    (player==='paper' && bot==='rock') ||
+    (player==='scissors' && bot==='paper')
+  ) text += "🎉 You win!";
+  else text += "😢 You lose!";
+  result.innerHTML = text;
+}
+
+  </script>
+</body>
+</html>
